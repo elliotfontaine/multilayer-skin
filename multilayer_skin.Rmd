@@ -27,6 +27,10 @@ setwd("/home/elliot/github/multilayer-skin")
 
 Les modules nécessaires sont les suivants:
 ```{r dependencies}
+# Général
+library(tidyverse)
+library(readr)
+
 # Web APIs
 library(httr)
 library(jsonlite)
@@ -34,9 +38,9 @@ library(biogridr)
 source("rest_functions.R")
 
 # Manipulation de graphes
-library(tidyverse)
 library(igraph)
 library(SteinerNet)
+library(netOmics)
 ```
 
 # **I. Couche PPI (Protein-Protein Interactions)**
@@ -112,7 +116,7 @@ summary(PPI_layer)
 ```
 
 On obtient donc la couche principale de notre réseau, constituée des interactions protéines-protéines. Les nœuds "terminals" sont colorés en rouge et les autres en jaune. Il est possible de la visualiser de manière dynamique avec `tkplot(PPI_layer)`, ou bien avec `plot` :
-```{r plot}
+```{r plot_ppi}
 plot(
   PPI_layer,
   vertex.label = NA,
@@ -136,12 +140,54 @@ PPI_degree <- tibble(
 print(PPI_degree[1:5, ])
 ```
 
-Rendu a ce point, les nœuds ont 3 attributs: `name` qui donne l'ID UniProt, `color` qui indique s'il s'agit des protéines ciblées ou des protéines rajoutées au graphe par `steinertree()`, et `type` qui a pour valeur "protein". Nous allons par la suite ajouter des noeuds de `type` "drug".
+Rendu a ce point, les nœuds ont 3 attributs: **name** qui donne l'ID UniProt, **color** qui indique s'il s'agit des protéines ciblées ou des protéines rajoutées au graphe par `steinertree()`, et **type** qui a pour valeur "protein". Le **type** indique la couche au sein du reseau multicouche. Nous allons par la suite ajouter des noeuds de **type** "drug".
 
 # **II. Couche DRUGS**
 
 ## Importer les proteines de drugbank
 
+```{r drugs_import}
+# Lecture du fichier CSV
+drugbank <- read_csv("drugbank_uniprot_links_2.csv") %>%
+  filter(`UniProt ID` %in% V(PPI_layer)$name)
+
+# Infos sur les aretes
+drugbank_relations <- data.frame(
+  from = drugbank$`DrugBank ID`,
+  to = drugbank$`UniProt ID`,
+  type = "DPI" # drug-protein interaction
+)
+
+# Infos sur les nœuds
+vertex_names <- unique(c(drugbank$`DrugBank ID`, drugbank$`UniProt ID`))
+drugbank_attributes <- data.frame(
+  name = vertex_names,
+  type = ifelse(grepl("^DB", vertex_names), "drug", "protein"),
+  color = ifelse(grepl("^DB", vertex_names), "pink", "yellow")
+)
+remove(vertex_names)
+
+# Création du graphe
+graph_drugbank <- igraph::graph_from_data_frame(
+  drugbank_relations,
+  vertices = drugbank_attributes,
+  directed = FALSE
+)
+summary(graph_drugbank)
+print(graph_drugbank, e = T, v = T)
+```
+
+## Visualisation
+
+```{r plot_drug}
+plot(
+  graph_drugbank,
+  vertex.label = NA,
+  edge.width = 0.5,
+  vertex.size = 2,
+  layout = layout_nicely
+)
+```
 
 
-drugbank_uniprot_links_2
+## Creation du multiplex avec `combine_layers`

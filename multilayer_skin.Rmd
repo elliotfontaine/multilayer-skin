@@ -11,7 +11,7 @@ knitr::opts_chunk$set(echo = TRUE)
 
 # Creation d'un reseau multicouche **drug/PPI/skin microbiome**
 
-## Initialisation de l'environnement de travail
+## Initialisation de l'environnement de travail blablabla
 
 Choisir le répertoire de travail. Il doit contenir les fichiers `prots_skin_infl.txt`, `BIOGRID-ALL-4.4.221.tab3.txt`, `drugbank_uniprot_links_2` et `rest_functions.R`.
 

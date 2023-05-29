@@ -1,0 +1,126 @@
+---
+title: "multilayer-skin"
+author: "Elliot Fontaine"
+date: "2023-05-26"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+# Creation d'un reseau multicouche **drug/PPI/skin microbiome**
+
+## Initialisation de l'environnement de travail
+
+Choisir le répertoire de travail. Il doit contenir les fichiers `prots_skin_infl.txt`, `BIOGRID-ALL-4.4.221.tab3.txt`, `drugbank_uniprot_links_2` et `rest_functions.R`.
+
+```{r workspace}
+setwd("/home/elliot/RWork")
+```
+
+Les modules nécessaires
+
+```{r dependencies}
+# Web APIs
+library(httr)
+library(jsonlite)
+library(biogridr)
+source("rest_functions.R")
+
+# Manipulation de graphes
+library(tidyverse)
+library(igraph)
+library(SteinerNet)
+```
+
+## Couche PPI (Protein-Protein Interactions)
+
+### Creation d'une liste de proteines cibles pour le reseau PPI
+
+Le fichier `prots_skin_infl.txt` contient une liste de protéines reconnues comme ayant un rôle dans l'inflammation de la peau. On va chercher a obtenir leur environnement métabolique proche: on liste les pathways KEGG dans lesquels elles se trouvent, puis on récupère la liste des protéines impliquées dans ces pathways.
+
+```{r metabolic_vicinity, echo=FALSE}
+# Lecture du contenu du fichier des protéines impliquées dans l'inflammation de la peau
+uniprot_ids <- read.table(
+  "prots_skin_infl.txt",
+  header = TRUE,
+  sep = "\t",
+  stringsAsFactors = FALSE,
+  encoding = "UTF-8"
+)
+uniprot_ids <- as.vector(uniprot_ids$UniProtKB)
+# Récupérer les pathways KEGG pour les IDs UniProt
+kegg_ids <- getKeggIdFromUniprot(uniprot_ids)
+kegg_ids <- as.vector(kegg_ids$To)
+pathway_ids <- unique(getKeggPathways(kegg_ids))
+# Récupérer tous les gènes associes au pathways
+genes_ids <- unique(getGenesFromPathways(pathway_ids))
+# Retour aux IDs UniProt pour les gènes
+enz_ids <- getUniprotIdFromKegg(genes_ids)
+enz_ids <- subset(enz_ids, Reviewed == "reviewed")
+```
+### Extraction de l'interactome proteine-proteine humain de BioGRID
+
+```{r biogrid_human}
+biogrid <- read_tsv("./BIOGRID-ALL-4.4.221.tab3.txt") %>%
+  dplyr::select(
+    "SWISS-PROT Accessions Interactor A",
+    "SWISS-PROT Accessions Interactor B",
+    "Organism Name Interactor A"
+  ) %>%
+  set_names("A", "B", "Species") %>%
+  filter(Species == "Homo sapiens") %>%
+  filter(A != "-") %>%
+  filter(B != "-")
+
+graph_human <- igraph::graph_from_data_frame(biogrid, directed = FALSE)
+summary(graph_human)
+```
+### Recherche du sous-arbre de Steiner contenant les proteines cibles
+
+Voir <https://github.com/krashkov/SteinerNet/blob/master/vignettes/tutorial.pdf> pour le tutoriel de SteinerNet.
+Nos "terminals" dans le sens du problème de l'arbre de Steiner sont les nœuds correspondant aux protéines de l'environnement métabolique proche.
+Comme on utilise une heuristique (SP = Shortest Path based approximation), le sous-réseau obtenu sera différent (en nombre de vertices et edges) a chaque fois qu'on exécute le code suivant, a moins d'utiliser une graine aléatoire fixée.
+
+```{r graph}
+# On s'assure que la liste de terminaux ne contient pas des vertices non-présents dans le réseau humain
+enz_ids <- enz_ids %>% filter(
+  Entry %in% biogrid$A | Entry %in% biogrid$B
+)
+# Recherche du sous-réseau
+PPI_layer <- steinertree(type = "SP", terminals = enz_ids$Entry, graph = graph_human, color = FALSE, merge = FALSE)[[1]]
+summary(PPI_layer)
+```
+On obtient donc la couche principale de notre réseau, constituée des interactions protéines-protéines. Les nœuds "terminals" sont colorés en rouge et les autres en jaune. Il est possible de la visualiser de maniere dynamique avec :
+```{r tkplot}
+tkplot(PPI_layer)
+```
+
+On bien avec `plot` :
+```{r plot, echo=FALSE}
+plot(
+  PPI_layer,
+  vertex.label = NA,
+  edge.width = 0.5,
+  vertex.size = 2,
+  layout = layout_with_fr
+)
+```
+
+Regardons les nœuds ayant le plus de connexions:
+```{r}
+PPI_degree <- tibble(
+  V(PPI_layer)$name,
+  degree(PPI_layer,
+  mode = "total")
+)
+```
+
+...
+
+## Couche DRUGS
+
+###
+
+drugbank_uniprot_links_2

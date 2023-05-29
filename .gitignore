@@ -2,4 +2,8 @@
 .Rhistory
 .RData
 .Ruserdata
+.lintr
 *.csv
+*.tsv
+
+BIOGRID-ALL-4.4.221.tab3.txt

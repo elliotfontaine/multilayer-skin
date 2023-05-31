@@ -47,7 +47,7 @@ library(netOmics)
 
 ## Creation d'une liste de proteines cibles pour le reseau PPI
 
-Le fichier `prots_skin_infl.txt` contient une liste de protéines reconnues comme ayant un rôle dans l'inflammation de la peau. On va chercher a obtenir leur environnement métabolique proche: on liste les pathways KEGG dans lesquels elles se trouvent, puis on récupère la liste des protéines impliquées dans ces pathways.
+Le fichier `prots_skin_infl.txt` contient une liste de protéines reconnues comme ayant un rôle dans l'inflammation de la peau. On va chercher à obtenir leur environnement métabolique proche: on liste les pathways KEGG dans lesquels elles se trouvent, puis on récupère la liste des protéines impliquées dans ces pathways.
 ```{r metabolic_vicinity}
 # Lecture du contenu du fichier des protéines impliquées dans l'inflammation de la peau
 uniprot_ids <- read.table(
@@ -72,7 +72,7 @@ enz_ids <- subset(enz_ids, Reviewed == "reviewed")
 ## Extraction de l'interactome proteine-proteine humain de BioGRID
 
 Le fichier `BIOGRID-ALL-4.4.221.tab3.txt` peut être téléchargé [ici](https://downloads.thebiogrid.org/BioGRID).
-On exclue les entrée ou il manque un ID UniProt (ceux ayant '-' comme valeur), pour éviter de se retrouver avec un vertex '-' ne correspondant pas a une protéine.
+On exclue les entrées où il manque un ID UniProt (ceux ayant '-' comme valeur), pour éviter de se retrouver avec un vertex '-' ne correspondant pas à une protéine.
 ```{r biogrid_human}
 biogrid <- read_tsv("./BIOGRID-ALL-4.4.221.tab3.txt") %>%
   dplyr::select(
@@ -82,11 +82,19 @@ biogrid <- read_tsv("./BIOGRID-ALL-4.4.221.tab3.txt") %>%
   ) %>%
   set_names("A", "B", "Species") %>%
   filter(Species == "Homo sapiens") %>%
+  dplyr::select(-Species) %>%
   filter(A != "-") %>%
   filter(B != "-")
 
+# Création du graphe
 graph_human <- igraph::graph_from_data_frame(biogrid, directed = FALSE)
+
+# Ajout d'attributs / tags
+V(graph_human)$type <- "protein"
+V(graph_human)$species <- "Homo sapiens"
+E(graph_human)$type <- "PPI"
 ```
+
 ```{r summary_human, results = "markup"}
 summary(graph_human)
 ```
@@ -95,27 +103,25 @@ summary(graph_human)
 ## Recherche du sous-arbre de Steiner contenant les proteines cibles
 
 Voir <https://github.com/krashkov/SteinerNet/blob/master/vignettes/tutorial.pdf> pour le tutoriel de SteinerNet.
-Nos "terminals" dans le sens du problème de l'arbre de Steiner sont les nœuds correspondant aux protéines de l'environnement métabolique proche.
-Comme on utilise une heuristique (SP = Shortest Path based approximation), le sous-réseau obtenu sera différent (en nombre de vertices et edges) a chaque fois qu'on exécute le code suivant, a moins d'utiliser une graine aléatoire fixée.
+Nos "terminals" dans le sens du problème de l'arbre de Steiner sont les nœuds correspondants aux protéines de l'environnement métabolique proche.
+Comme on utilise une heuristique (SP = Shortest Path based approximation), le sous-réseau obtenu sera différent (en nombre de vertices et edges) à chaque fois qu'on exécute le code suivant, à moins d'utiliser une graine aléatoire fixée.
 ```{r graph, results = "markup"}
-# On s'assure que la liste de terminaux ne contient pas des vertices non-présents dans le réseau humain
+# On s'assure que la liste de "terminals" ne contient pas des nœuds non-présents dans le réseau humain
 enz_ids <- enz_ids %>% filter(
   Entry %in% biogrid$A | Entry %in% biogrid$B
 )
 # Recherche du sous-réseau
 PPI_layer <- steinertree(type = "SP", terminals = enz_ids$Entry, graph = graph_human, color = FALSE, merge = FALSE)[[1]]
-V(PPI_layer)$type <- "protein"
-E(PPI_layer)$type <- "PPI"
 
-# Alleger l'environnement
-remove(biogrid)
-remove(graph_human)
+# Alléger l'environnement
+remove(biogrid, enz_ids, graph_human)
 ```
+
 ```{r summary_PPI, results='markup'}
 summary(PPI_layer)
 ```
 
-On obtient donc la couche principale de notre réseau, constituée des interactions protéines-protéines. Les nœuds "terminals" sont colorés en rouge et les autres en jaune. Il est possible de la visualiser de manière dynamique avec `tkplot(PPI_layer)`, ou bien avec `plot` :
+On obtient donc la couche principale de notre réseau, constituée des interactions protéines-protéines. Les nœuds "terminals" (recherchés) sont colorés en rouge et les autres en jaune. Il est possible de la visualiser de manière dynamique avec `tkplot(PPI_layer)`, ou bien avec `plot` :
 ```{r plot_ppi}
 plot(
   PPI_layer,
@@ -140,54 +146,58 @@ PPI_degree <- tibble(
 print(PPI_degree[1:5, ])
 ```
 
-Rendu a ce point, les nœuds ont 3 attributs: **name** qui donne l'ID UniProt, **color** qui indique s'il s'agit des protéines ciblées ou des protéines rajoutées au graphe par `steinertree()`, et **type** qui a pour valeur "protein". Le **type** indique la couche au sein du reseau multicouche. Nous allons par la suite ajouter des noeuds de **type** "drug".
+Rendu à ce point, les nœuds ont 3 attributs: **name** qui donne l'ID UniProt, **color** qui indique s'il s'agit des protéines ciblées ou des protéines rajoutées au graphe par `steinertree()`, et **type** qui a pour valeur "protein". Le **type** indique la couche au sein du réseau multicouche. Nous allons par la suite ajouter des noeuds de **type** "drug".
 
-# **II. Couche DRUGS**
+# **II. Couche des médicaments (drugs)**
 
-## Importer les proteines de drugbank
+## Creation du graphe isolé des médicaments
 
+La couche des médicaments est particulière car elle est sans arêtes (c'est un graphe isolé). En effet, on ne s'intéresse qu'aux interactions drug-protein, pas à de possibles interactions drug-drug. On crée un graphe, et pas une simple liste, car la fonction `combine_layers` prend 2 graphes en entrée.
 ```{r drugs_import}
 # Lecture du fichier CSV
 drugbank <- read_csv("drugbank_uniprot_links_2.csv") %>%
   filter(`UniProt ID` %in% V(PPI_layer)$name)
 
-# Infos sur les aretes
+# Infos sur les arêtes drug-protein
 drugbank_relations <- data.frame(
   from = drugbank$`DrugBank ID`,
   to = drugbank$`UniProt ID`,
-  type = "DPI" # drug-protein interaction
+  type = "DPI" # == drug-protein interaction
 )
 
-# Infos sur les nœuds
-vertex_names <- unique(c(drugbank$`DrugBank ID`, drugbank$`UniProt ID`))
-drugbank_attributes <- data.frame(
-  name = vertex_names,
-  type = ifelse(grepl("^DB", vertex_names), "drug", "protein"),
-  color = ifelse(grepl("^DB", vertex_names), "pink", "yellow")
+# Création du graphe sans arêtes des médicaments
+drugs <- unique(drugbank$`DrugBank ID`)
+graph_drugbank <- make_empty_graph(directed = FALSE) %>%
+  add_vertices(length(drugs), name = drugs, type = "drug", color = "pink"
 )
-remove(vertex_names)
-
-# Création du graphe
-graph_drugbank <- igraph::graph_from_data_frame(
-  drugbank_relations,
-  vertices = drugbank_attributes,
-  directed = FALSE
-)
-summary(graph_drugbank)
-print(graph_drugbank, e = T, v = T)
+remove(drugs)
 ```
 
-## Visualisation
+## Creation du "multiplex" avec `combine_layers`
 
-```{r plot_drug}
+On utilise le package `netOmics` d'ADLab pour combiner la couche des médicaments à celle des protéines. C'est un multiplex entre parenthèses car on se retrouve avec un seul graphe, où la couche des nœuds est déterminée par un attribut de nœud (**type**).
+```{r combine}
+drug_PPI_layers <- combine_layers(
+  graph1 = PPI_layer,
+  graph2 = graph_drugbank,
+  interaction.df = drugbank_relations
+)
+# Alléger l'environnement
+remove(drugbank, drugbank_relations, graph_drugbank)
+```
+
+```{r summary_drug_PPI, results='markup'}
+summary(drug_PPI_layers)
+```
+
+Visualisons le graphe nouvellement créé:
+```{r plot_multiplex}
 plot(
-  graph_drugbank,
+  drug_PPI_layers,
   vertex.label = NA,
   edge.width = 0.5,
   vertex.size = 2,
-  layout = layout_nicely
+  layout = layout_with_fr
 )
 ```
 
-
-## Creation du multiplex avec `combine_layers`

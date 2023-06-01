@@ -1,0 +1,11 @@
+---
+title: "__**Cr**__"
+author: "Elliot Fontaine"
+date: "`r Sys.Date()`"
+output:
+  prettydoc::html_pretty:
+    theme: cayman
+    highlight: github
+---
+
+Creation de pangenomes bacteriens a partir de bases de donnes publiques

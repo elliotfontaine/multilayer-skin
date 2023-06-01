@@ -43,9 +43,9 @@ library(SteinerNet)
 library(netOmics)
 ```
 
-# **I. Couche PPI (Protein-Protein Interactions)**
+# **I. Couche PPI (Protein-Protein Interactions) de l'humain**
 
-## Creation d'une liste de proteines cibles pour le reseau PPI
+## Creation d'une liste de proteines cibles pour le réseau PPI
 
 Le fichier `prots_skin_infl.txt` contient une liste de protéines reconnues comme ayant un rôle dans l'inflammation de la peau. On va chercher à obtenir leur environnement métabolique proche: on liste les pathways KEGG dans lesquels elles se trouvent, puis on récupère la liste des protéines impliquées dans ces pathways.
 ```{r metabolic_vicinity}
@@ -146,7 +146,7 @@ PPI_degree <- tibble(
 print(PPI_degree[1:5, ])
 ```
 
-Rendu à ce point, les nœuds ont 3 attributs: **name** qui donne l'ID UniProt, **color** qui indique s'il s'agit des protéines ciblées ou des protéines rajoutées au graphe par `steinertree()`, et **type** qui a pour valeur "protein". Le **type** indique la couche au sein du réseau multicouche. Nous allons par la suite ajouter des noeuds de **type** "drug".
+Rendu à ce point, les nœuds ont 3 attributs: **name** qui donne l'ID UniProt, **color** qui indique s'il s'agit des protéines ciblées (rouge) ou des protéines rajoutées au graphe par `steinertree()` (jaune), et **type** qui a pour valeur "protein". Le **type** indique la couche au sein du réseau multicouche. Nous allons par la suite ajouter des noeuds de **type** "drug".
 
 # **II. Couche des médicaments (drugs)**
 
@@ -200,4 +200,8 @@ plot(
   layout = layout_with_fr
 )
 ```
+
+# **Couche PPI du microbiote**
+
+## Création des pangénomes bactériens
 

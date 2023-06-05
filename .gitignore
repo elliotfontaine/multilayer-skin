@@ -3,7 +3,7 @@
 .RData
 .Ruserdata
 .lintr
-*.csv
-*.tsv
 
 BIOGRID-ALL-4.4.221.tab3.txt
+data/BIOGRID-ALL-4.4.221.tab3.zip
+data/BIOGRID-ALL-4.4.221.tab3.ALLSPECIES.txt

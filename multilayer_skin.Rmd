@@ -20,7 +20,7 @@ knitr::opts_chunk$set(
 
 # **0. Initialisation de l'environnement de travail**
 
-Choisir le répertoire de travail. Il doit contenir les fichiers `prots_skin_infl.txt`, `BIOGRID-ALL-4.4.221.tab3.txt`, `drugbank_uniprot_links_2` et `rest_functions.R`.
+Choisir le répertoire de travail. En plus de ce `.Rmd`, il doit contenir le fichier `rest_functions.R`, et les fichiers `prots_skin_infl.txt`, `BIOGRID-ALL-4.4.221.tab3.txt`, `drugbank_uniprot_links_2` dans un répertoire 'data'.
 ```{r workspace}
 setwd("/home/elliot/github/multilayer-skin")
 ```
@@ -51,7 +51,7 @@ Le fichier `prots_skin_infl.txt` contient une liste de protéines reconnues comm
 ```{r metabolic_vicinity}
 # Lecture du contenu du fichier des protéines impliquées dans l'inflammation de la peau
 uniprot_ids <- read.table(
-  "prots_skin_infl.txt",
+  "data/prots_skin_infl.txt",
   header = TRUE,
   sep = "\t",
   stringsAsFactors = FALSE,
@@ -74,7 +74,7 @@ enz_ids <- subset(enz_ids, Reviewed == "reviewed")
 Le fichier `BIOGRID-ALL-4.4.221.tab3.txt` peut être téléchargé [ici](https://downloads.thebiogrid.org/BioGRID).
 On exclue les entrées où il manque un ID UniProt (ceux ayant '-' comme valeur), pour éviter de se retrouver avec un vertex '-' ne correspondant pas à une protéine.
 ```{r biogrid_human}
-biogrid <- read_tsv("./BIOGRID-ALL-4.4.221.tab3.txt") %>%
+biogrid <- read_tsv("data/BIOGRID-ALL-4.4.221.tab3.txt") %>%
   dplyr::select(
     "SWISS-PROT Accessions Interactor A",
     "SWISS-PROT Accessions Interactor B",
@@ -155,7 +155,7 @@ Rendu à ce point, les nœuds ont 3 attributs: **name** qui donne l'ID UniProt, 
 La couche des médicaments est particulière car elle est sans arêtes (c'est un graphe isolé). En effet, on ne s'intéresse qu'aux interactions drug-protein, pas à de possibles interactions drug-drug. On crée un graphe, et pas une simple liste, car la fonction `combine_layers` prend 2 graphes en entrée.
 ```{r drugs_import}
 # Lecture du fichier CSV
-drugbank <- read_csv("drugbank_uniprot_links_2.csv") %>%
+drugbank <- read_csv("data/drugbank_uniprot_links_2.csv") %>%
   filter(`UniProt ID` %in% V(PPI_layer)$name)
 
 # Infos sur les arêtes drug-protein

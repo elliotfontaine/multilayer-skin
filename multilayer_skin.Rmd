@@ -177,7 +177,7 @@ graph_drugbank <- make_empty_graph(directed = FALSE) %>%
 remove(drugs)
 ```
 
-## Creation du "multiplex" avec `combine_layers`
+## Création du "multiplex" avec `combine_layers`
 
 On utilise le package `netOmics` d'ADLab pour combiner la couche des médicaments à celle des protéines. C'est un multiplex entre parenthèses car on se retrouve avec un seul graphe, où la couche des nœuds est déterminée par un attribut de nœud (**type**).
 
@@ -210,3 +210,5 @@ plot(
 # **Couche PPI du microbiote**
 
 ## Création des pangénomes bactériens
+
+Voir `pangenomes.Rmd`

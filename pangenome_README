@@ -1,0 +1,22 @@
+# nombre de prot uniques pour c acnes 
+grep -c "^>" /mnt/loreal_tn04/projects/pangenome/propioni_cuti/mael/14_anvio/pan_cacnes_3/combined-aas.fa.unique
+52 331
+# location fichier annotation des gènes 
+/mnt/loreal_tn04/projects/pangenome/propioni_cuti/mael/14_anvio/pan_cacnes_3/PROJECT-SUMMARY/C_acnes_genomic_comparison_gene_clusters_summary.txt
+
+https://github.com/zachcp/PFAM-protein-data
+
+/mnt/projects_tn01/AD_drug_microbiome/
+
+
+
+## comparaison uniprot pfam des sequences annotées dans le fichier C_acnes_genomic_comparison_gene_clusters_summary.txt avec prot humaine 
+
+## Recherche de similarité dans les séquences des proteines bacteriennes non annotées et les prot humaines 
+### Recherche les ID proteines non annotées (grep -v "PF" C_acnes_genomic_comparison_gene_clusters_summary.txt)
+=> liste des ID des proteines non annotées pour recuperer leur sequence dans combined-aas.fa.unique
+### parser les sequences
+python parse_fasta.py -list_id = list_prot_non annotes -fasta= combined-aas.fa.unique
+=> fichier fasta des proteines non annotées.
+### rechercher les similaritées entre ces proteines et tes protéines humaines
+BLASTP proteine bact versus prot Human

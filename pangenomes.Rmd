@@ -1,5 +1,5 @@
 ---
-title: "__**Cr**__"
+title: "__**Pangenome de C. acnes (pour l'instant)**__"
 author: "Elliot Fontaine"
 date: "`r Sys.Date()`"
 output:
@@ -8,4 +8,96 @@ output:
     highlight: github
 ---
 
-Creation de pangenomes bacteriens a partir de bases de donnes publiques
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(
+  echo = TRUE,
+  results = "hide",
+  error = FALSE,
+  warning = FALSE,
+  message = FALSE
+)
+```
+
+# 0. Initialisation de l'environnement de travail
+
+Choisir le répertoire de travail. En plus de ce `.Rmd`, il doit contenir les fichiers `C_acnes_genomic_comparison_gene_clusters_summary.tsv` et `combined-aas.unique.fa` dans un répertoire 'data'.
+
+```{r workspace, eval=FALSE}
+setwd("/home/elliot/github/multilayer-skin")
+```
+
+Les modules nécessaires sont les suivants:
+
+```{r dependencies}
+# Général
+library(tidyverse)
+library(readr)
+library(Biostrings)
+library(PFAMProteinData)
+library(pryr)
+
+# Web APIs
+# library(httr)
+# library(jsonlite)
+# library(biogridr)
+# source("rest_functions.R")
+
+# Manipulation de graphes
+# library(igraph)
+# library(SteinerNet)
+# library(netOmics)
+```
+
+`PFAMProteinData` doit être installé depuis son [repo github](https://github.com/zachcp/PFAM-protein-data) avec:
+
+```{r pfamprotdata_installation, eval=FALSE}
+library(devtools)
+install_github("zachcp/PFAM-protein-data")
+```
+
+L\'étape `*** moving datasets to lazyload DB` peut prendre un certain temps (une dizaine de minutes sur le serveur!), il faut être patient.
+
+# 1. AAAA
+
+```{r proteome_import}
+# Lecture
+cacnes_annotation <- read_tsv("data/C_acnes_genomic_comparison_gene_clusters_summary.tsv")
+cacnes_proteome <- readAAStringSet("data/combined-aas.unique.fa")
+proteome_df <- data.frame(names(cacnes_proteome), paste(cacnes_proteome)) %>%
+  set_names("name", "seq")
+remove(cacnes_proteome)
+```
+
+Voila ce que dit la documentation de PFAMProteinData
+```{r pfampd}
+# this may take some time ... [ 8 MINUTES POUR MOI]
+PFAM_data <- load_pfam()
+
+# ....its a big table
+dim(PFAM_data)
+# [1] 71810937        4
+
+pryr::object_size(PFAM_data)
+# 4.15 GB
+
+# its a data.table so you can subset on the keyed column
+PFAM_data["PF00001"]
+
+#   PFAM_ID UNIPROT_ACC START END
+#  1: PF00001      Q4SMD5    38 265
+#  2: PF00001      Q4SMD5   310 424
+#  3: PF00001      Q4SMD5   436 518
+#  4: PF00001      Q4SMD5   515 599
+#  5: PF00001      Q4SMD5   596 804
+```
+
+qqq
+
+```{r}
+library(AnnotationDbi)
+annotations_orgDb <- suppressMessages(AnnotationDbi::select(org.Hs.eg.db, # database
+  keys = as.character(cacnes_annotation$gene_callers_id), # data to use for retrieval
+  columns = "UNIPROT", # information to retreive for given data
+  keytype = "ENTREZID"
+))
+```

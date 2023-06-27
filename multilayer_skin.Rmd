@@ -162,13 +162,6 @@ La couche des médicaments est particulière car elle est sans arêtes (c'est un
 drugbank <- read_csv("data/drugbank_uniprot_links_2.csv") %>%
   filter(`UniProt ID` %in% V(PPI_layer)$name)
 
-# Infos sur les arêtes drug-protein
-drugbank_relations <- data.frame(
-  from = drugbank$`DrugBank ID`,
-  to = drugbank$`UniProt ID`,
-  type = "DPI" # == drug-protein interaction
-)
-
 # Création du graphe sans arêtes des médicaments
 drugs <- unique(drugbank$`DrugBank ID`)
 graph_drugbank <- make_empty_graph(directed = FALSE) %>%
@@ -182,6 +175,14 @@ remove(drugs)
 On utilise le package `netOmics` d'ADLab pour combiner la couche des médicaments à celle des protéines. C'est un multiplex entre parenthèses car on se retrouve avec un seul graphe, où la couche des nœuds est déterminée par un attribut de nœud (**type**).
 
 ```{r combine}
+# Infos sur les arêtes drug-protein
+drugbank_relations <- data.frame(
+  from = drugbank$`DrugBank ID`,
+  to = drugbank$`UniProt ID`,
+  type = "DPI" # == drug-protein interaction
+)
+
+# Assemblage du multiplex
 drug_PPI_layers <- combine_layers(
   graph1 = PPI_layer,
   graph2 = graph_drugbank,

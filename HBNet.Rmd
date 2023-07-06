@@ -22,7 +22,7 @@ Méthodes basées sur Zhou et al. (2022), <https://doi.org/10.1186/s13059-022-02
 
 # **0. Initialisation de l'environnement de travail**
 
-Choisir le répertoire de travail. En plus de ce `.Rmd`, il doit contenir le fichier `rest_functions.R`, et les fichiers `BIOGRID-ALL-4.4.221.tab3.txt`, [...] dans un répertoire 'data'.
+Choisir le répertoire de travail. En plus de ce `.Rmd`, il doit contenir le fichier `rest_functions.R`, et les fichiers `BIOGRID-ALL-4.4.221.tab3.txt`, `hpidb_human_list.mitab_plus.txt`, `zhou2022_hbnet.txt` dans un répertoire 'data'.
 
 ```{r workspace, eval=FALSE}
 setwd("/home/fonell01/github/multilayer-skin")
@@ -36,6 +36,7 @@ library(tidyverse)
 library(readr)
 
 # Web APIs
+library(UniProt.ws)
 library(httr)
 library(jsonlite)
 library(biogridr)
@@ -70,4 +71,94 @@ HPIDB
 
 ```{r}
 hpidb <- read_tsv("data/hpidb_human_list.mitab_plus.txt")
+interaction_type <- as.data.frame(table(hpidb$interaction_type))
+detection_method <- as.data.frame(table(hpidb$detection_method))
 ```
+
+Interactions were downloaded from the IntAct database, HPIdb 3.0, and BioGRID [June 2021] and supplemented with additional host-microbe interaction studies, whose interactions were added manually. Only interactions with evidence codes that indicated binary, experimental determination of the interaction between UniProt identifiers with non-matching taxa were preserved, thereby excluding co-complex associations, small molecule interactions, and predicted interactions.
+
+Uniref100/90 clusters containing human proteins and Uniref50 cluster containing bacterial proteins were downloaded from UniProt [June 2021], to which interspecies protein interactors were mapped [89]. PPIs comprising one Uniref100/90 cluster containing human proteins and one Uniref50 cluster containing bacterial proteins were retained for downstream analyses.
+
+Within each UniRef50 bacterial cluster, we further filtered the sequences such that only bacterial members of the cluster within 70% sequence similarity to the experimentally verified protein were labeled as putative interactors. Sequence similarity was calculated using a Smith-Waterman local alignment with the BLOSUM62 matrix via python's parasail [90] library (v.1.1.17) and tallying the number of matches in the pairwise alignment that represent frequent substitutions (non-negative BLOSUM62 scores), divided by the length of the experimentally verified interactor.
+
+-   Formater en MITAB <https://psicquic.github.io/MITAB28Format.html>
+-   Filtrer binaire
+-   Filtrer experimental
+-   Filtrer MIScore
+-   Récuperer les IDs uniprots dans la colonne **protein_xref\_`1/2`\_unique**. Il est possible d'aller en chercher dans d'autres colonnes (alternative_identifiers) mais besoin de regex etc, pour l'instant faisons simple.
+-   Mapper les IDs uniprots à uniref via le package `UniProt.ws`. Pour savoir si bactérie ou champignon, voir colonne `protein_taxid_2_cat`.
+
+[...]
+
+## Zhou2022 dataset HBNet
+
+Voir **"Additional file 9: Table S8"** de la publication. Contient les IDs UniProt des PPIs interspécifiques, avant tout filtre.
+
+```{r zhou_to_df}
+zhou_ppi <- read_tsv("data/zhou2022_hbnet.txt")
+
+# Data Wrangling
+zhou_ppi <- zhou_ppi %>%
+  mutate(
+    interactor_1 = str_extract(Experimental_Interaction, "\\w+"),
+    interactor_2 = str_extract(Experimental_Interaction, "(?<=', ')[A-Z0-9]+"),
+    publications = str_remove_all(publications, "\\{|\\}|'") # Expressions régulières proposées par chatGPT
+  ) %>%
+  dplyr::select(interactor_1, interactor_2, db, publications) # On ne garde que les deux premiers IDs d'interacteurs
+```
+
+Analysons cette base de données
+
+```{r zhou_quality_check}
+unique_interactors <- unique(
+  append(
+    zhou_ppi$interactor_1,
+    zhou_ppi$interactor_2
+    )
+  )
+length(unique_interactors)
+```
+Attribuons les espèces aux ids
+
+```{r add_taxonomy}
+up <- UniProt.ws(taxId=9606)
+res <- select(
+  up,
+  keys = unique_interactors,
+  keytype = "UniProtKB",
+  columns = c("organism_name", "organism_id")
+)
+# Environ 1 minute
+
+```
+
+
+Mapper sur uniref
+
+```{r uniref90_mapping}
+interactors_ref90 <- mapUniProt(
+    from = "UniProtKB_AC-ID",
+    to = 'UniRef90',
+    # columns = c("id"),
+    query = unique_interactors
+)
+```
+
+Certains IDs UniProt (18 au total) ne semblent pas matcher via `mapUniProt`, il faut aller les chercher manuellement.
+
+```{r uniref90_unmapped}
+unmapped <- character()
+for(i in 1:nrow(interactors_ref90)) {
+  if (interactors_ref90$From[i] == "Error encountered when streaming data. Please try again later.") {
+    unmapped <- append(unmapped, unique_interactors[i])
+  }
+}
+print(unmapped)
+```
+
+mapUniProt(
+    from = "UniParc",
+    to = "UniProtKB",
+    # columns = c("id"),
+    query = c("E9PKA7")
+)

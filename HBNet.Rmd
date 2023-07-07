@@ -107,7 +107,7 @@ zhou_ppi <- zhou_ppi %>%
   dplyr::select(interactor_1, interactor_2, db, publications) # On ne garde que les deux premiers IDs d'interacteurs
 ```
 
-Analysons cette base de données
+On obtient la liste des protéines uniques dans les interactions, qu'on va chercher à annoter avec les données d'UniProt
 
 ```{r zhou_quality_check}
 unique_interactors <- unique(
@@ -118,6 +118,106 @@ unique_interactors <- unique(
   )
 length(unique_interactors)
 ```
+
+On écrit cette liste dans un fichier pour l'importer sur [UniProt](https://www.uniprot.org/id-mapping) pour obtenir les champs supplémentaires qui nous intéressent.
+
+```{r add_taxonomy}
+
+unique_interactors <- read_tsv("data/idmapping_taxonomy.tsv")
+
+get_taxon <- function(organism_id, lineage) {
+  taxon <- NA
+  if (!is.na(organism_id) && organism_id == "9606") {
+    taxon = "human"
+  }
+  else if (!is.na(lineage) && grepl("2 (superkingdom)", lineage, fixed = TRUE)) {
+    taxon = "bacteria"
+  }
+  else if (!is.na(lineage) && grepl("10239 (superkingdom)", lineage, fixed = TRUE)) {
+    taxon = "virus"
+  }
+  else if (!is.na(lineage) && grepl("33208 (kingdom)", lineage, fixed = TRUE)) {
+    taxon = "metazoa"
+  }
+  else if (!is.na(lineage) && grepl("4751 (kingdom)", lineage, fixed = TRUE)) {
+    taxon = "fungi"
+  }
+  else if (!is.na(lineage) && grepl("2759 (superkingdom)", lineage, fixed = TRUE)) {
+    taxon = "eukaryota"
+  }
+  else if (!is.na(lineage) && grepl("2157 (superkingdom)", lineage, fixed = TRUE)) {
+    taxon = "archaea"
+  }
+  return(taxon)
+}
+
+unique_interactors$taxon <- mapply(
+  get_taxon,
+  unique_interactors$`Organism (ID)`,
+  unique_interactors$`Taxonomic lineage (Ids)`
+)
+```
+
+On ajoute également les clusters UniRef100/90/50 (à obtenir également en lançant un job sur le site d'UniProt).
+
+```{r add_uniref}
+
+uniref_tsv = c(
+  "uniref100" = "data/idmapping_uniref100.tsv",
+  "uniref90" = "data/idmapping_uniref90.tsv",
+  "uniref50" = "data/idmapping_uniref50.tsv"
+)
+
+for (uniref in uniref_tsv) {
+  
+}
+```
+
+On met à jour les IDs UniProt de 2021 (publication) qui ont été "merged" depuis.
+
+```{r merged_id}
+zhou_ppi$interactor_1 <- sapply(
+  zhou_ppi$interactor_1,
+  function(x) {
+    with(unique_interactors, Entry[From==x])
+  }
+)
+
+zhou_ppi$interactor_2 <- sapply(
+  zhou_ppi$interactor_2,
+  function(x) {
+    with(unique_interactors, Entry[From==x])
+  }
+)
+```
+
+Ajoutons les taxons au PPIs de \`zhou_ppi\`, et filtrons les PPI bactérie-humain ou .
+
+```{r human_bacteria_filter}
+
+
+zhou_ppi$taxon_1 <- sapply(
+  zhou_ppi$interactor_1,
+  function(x) {
+    with(unique_interactors, taxon[Entry==x])[1]
+  }
+)
+
+zhou_ppi$taxon_2 <- sapply(
+  zhou_ppi$interactor_2,
+  function(x) {
+    with(unique_interactors, taxon[Entry==x])[1]
+  }
+)
+
+
+zhou_ppi$ppi_taxons <- paste(zhou_ppi$taxon_1, zhou_ppi$taxon_2, sep=",")
+table(zhou_ppi$ppi_taxons)
+
+skin_ppi <- zhou_ppi %>% 
+  filter(ppi_taxons %in% c("human,bacteria", "bacteria,human"))
+```
+
 Attribuons les espèces aux ids
 
 ```{r add_taxonomy}
@@ -131,7 +231,6 @@ res <- select(
 # Environ 1 minute
 
 ```
-
 
 Mapper sur uniref
 
@@ -156,9 +255,4 @@ for(i in 1:nrow(interactors_ref90)) {
 print(unmapped)
 ```
 
-mapUniProt(
-    from = "UniParc",
-    to = "UniProtKB",
-    # columns = c("id"),
-    query = c("E9PKA7")
-)
+mapUniProt( from = "UniParc", to = "UniProtKB", \# columns = c("id"), query = c("E9PKA7") )

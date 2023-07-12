@@ -1,0 +1,86 @@
+From	Cluster ID	Cluster Name	Size	Identity	Common taxon	Common taxon ID
+A0A380PGX5	UniRef50_A0A0A2WD53	Cluster: Probable transcriptional regulator ycf27	1267	0.5	cellular organisms	131567
+Q9UQW6	UniRef50_A0A1D8PH52	Cluster: Acetyl-CoA acetyltransferase	884	0.5	cellular organisms	131567
+O13326	UniRef50_O13326	Cluster: Homocysteine synthase	27	0.5	cellular organisms	131567
+O13867	UniRef50_O13867	Cluster: Uracil phosphoribosyltransferase 1	9	0.5	Fungi	4751
+O13966	UniRef50_O13966	Cluster: Aconitate hydratase, mitochondrial	2683	0.5	root	1
+O14344	UniRef50_O14344	Cluster: Inosine-5'-monophosphate dehydrogenase	12	0.5	cellular organisms	131567
+O42700	UniRef50_O42700	Cluster: Transaldolase	3735	0.5	root	1
+O59736	UniRef50_O59736	Cluster: 2-isopropylmalate synthase	19	0.5	Dikarya	451864
+O59778	UniRef50_O59778	Cluster: Biotin synthase	144	0.5	Eukaryota	2759
+O60101	UniRef50_O60101	Cluster: Phosphoglycerate kinase	9	0.5	Opisthokonta	33154
+O74330	UniRef50_O74330	Cluster: 40S ribosomal protein S27	39	0.5	Opisthokonta	33154
+O74374	UniRef50_O74374	Cluster: Phosphoglucomutase	121	0.5	cellular organisms	131567
+O74445	UniRef50_O74445	Cluster: Probable 26S proteasome subunit rpt4	93	0.5	Eukaryota	2759
+O74887	UniRef50_O74887	Cluster: Peroxiredoxin tpx1	37	0.5	cellular organisms	131567
+O94438	UniRef50_O94438	Cluster: 40S ribosomal protein S1-B	211	0.5	Eukaryota	2759
+O94641	UniRef50_O94641	Cluster: Heat shock protein 104	485	0.5	cellular organisms	131567
+P00358	UniRef50_P00358	Cluster: Glyceraldehyde-3-phosphate dehydrogenase 2	681	0.5	root	1
+P00830	UniRef50_P00830	Cluster: ATP synthase subunit beta, mitochondrial	340	0.5	cellular organisms	131567
+P00950	UniRef50_P00950	Cluster: Phosphoglycerate mutase 1	433	0.5	cellular organisms	131567
+P02994	UniRef50_P02994	Cluster: Elongation factor 1-alpha	2792	0.5	cellular organisms	131567
+O94313	UniRef50_P03965	Cluster: Carbamoyl-phosphate synthase arginine-specific large chain	348	0.5	cellular organisms	131567
+P04046	UniRef50_P04046	Cluster: Amidophosphoribosyltransferase	30	0.5	Fungi	4751
+P04076	UniRef50_P04076	Cluster: Argininosuccinate lyase	183	0.5	Eukaryota	2759
+P05734	UniRef50_P05734	Cluster: 60S ribosomal protein L19-A	164	0.5	cellular organisms	131567
+P78827	UniRef50_P06168	Cluster: Ketol-acid reductoisomerase, mitochondrial	3697	0.5	root	1
+P07251	UniRef50_P07251	Cluster: ATP synthase subunit alpha, mitochondrial	817	0.5	cellular organisms	131567
+O14289	UniRef50_P07264	Cluster: 3-isopropylmalate dehydratase	882	0.5	Eukaryota	2759
+O14293	UniRef50_P08157	Cluster: Aldehyde dehydrogenase	1094	0.5	cellular organisms	131567
+P08417	UniRef50_P08417	Cluster: Fumarate hydratase, mitochondrial	268	0.5	root	1
+P0CT58	UniRef50_P0C0W1	Cluster: 40S ribosomal protein S22-A	428	0.5	Eukaryota	2759
+P22774	UniRef50_P0CS90	Cluster: Import motor subunit, mitochondrial	3571	0.5	root	1
+P0CT53	UniRef50_P0CT54	Cluster: Elongation factor 1-alpha-B	421	0.5	cellular organisms	131567
+P0CT73	UniRef50_P0CT73	Cluster: 40S ribosomal protein S11-A	208	0.5	Eukaryota	2759
+P0CT75	UniRef50_P0CT75	Cluster: 40S ribosomal protein S23-A	675	0.5	root	1
+Q9P7B2	UniRef50_P0CX39	Cluster: 40S ribosomal protein S8-A	741	0.5	cellular organisms	131567
+P10989	UniRef50_P10989	Cluster: Actin	164	0.5	Eukaryota	2759
+P11154	UniRef50_P11154	Cluster: Pyruvate carboxylase 1	1532	0.5	cellular organisms	131567
+P12709	UniRef50_P12709	Cluster: Glucose-6-phosphate isomerase	88	0.5	cellular organisms	131567
+P14965	UniRef50_P13649	Cluster: Orotidine 5'-phosphate decarboxylase	65	0.5	cellular organisms	131567
+P14832	UniRef50_P14832	Cluster: Peptidyl-prolyl cis-trans isomerase	299	0.5	cellular organisms	131567
+P15019	UniRef50_P15019	Cluster: Transaldolase	75	0.5	root	1
+P15202	UniRef50_P15202	Cluster: Peroxisomal catalase A	142	0.5	cellular organisms	131567
+P15732	UniRef50_P15732	Cluster: Ubiquitin-conjugating enzyme E2-16 kDa	176	0.5	root	1
+P18238	UniRef50_P18239	Cluster: ADP,ATP carrier protein 2	198	0.5	cellular organisms	131567
+P19414	UniRef50_P19414	Cluster: Aconitate hydratase, mitochondrial	738	0.5	root	1
+P21954	UniRef50_P21954	Cluster: Isocitrate dehydrogenase [NADP], mitochondrial	86	0.5	cellular organisms	131567
+P22068	UniRef50_P22068	Cluster: ATP synthase subunit beta, mitochondrial	101	0.5	Fungi	4751
+P22768	UniRef50_P22768	Cluster: Argininosuccinate synthase	392	0.5	cellular organisms	131567
+Q12439	UniRef50_P25383	Cluster: Transposon Ty2-C Gag polyprotein	32	0.5	cellular organisms	131567
+P28272	UniRef50_P28272	Cluster: Dihydroorotate dehydrogenase (fumarate)	2559	0.5	cellular organisms	131567
+P28777	UniRef50_P28777	Cluster: Chorismate synthase	47	0.5	cellular organisms	131567
+C5MAS1	UniRef50_P30575	Cluster: Enolase 1	156	0.5	cellular organisms	131567
+P32288	UniRef50_P32288	Cluster: Glutamine synthetase	304	0.5	cellular organisms	131567
+C5M634	UniRef50_P32324	Cluster: Elongation factor 2	747	0.5	cellular organisms	131567
+P32449	UniRef50_P32449	Cluster: Phospho-2-dehydro-3-deoxyheptonate aldolase, tyrosine-inhibited	251	0.5	root	1
+P32582	UniRef50_P32582	Cluster: Cystathionine beta-synthase	176	0.5	Fungi	4751
+P35679	UniRef50_P35679	Cluster: 60S ribosomal protein L4-A	502	0.5	cellular organisms	131567
+P36580	UniRef50_P36580	Cluster: Fructose-bisphosphate aldolase	696	0.5	cellular organisms	131567
+P36623	UniRef50_P36623	Cluster: Phosphoglycerate mutase	447	0.5	cellular organisms	131567
+P38625	UniRef50_P38625	Cluster: GMP synthase [glutamine-hydrolyzing]	78	0.5	cellular organisms	131567
+P39676	UniRef50_P39676	Cluster: Flavohemoprotein	56	0.5	cellular organisms	131567
+P39954	UniRef50_P39954	Cluster: Adenosylhomocysteinase	2022	0.5	root	1
+P40370	UniRef50_P40370	Cluster: Enolase 1-1	341	0.5	root	1
+P40581	UniRef50_P40581	Cluster: Glutathione peroxidase-like peroxiredoxin HYR1	301	0.5	cellular organisms	131567
+P41338	UniRef50_P41338	Cluster: Acetyl-CoA acetyltransferase	125	0.5	cellular organisms	131567
+P41390	UniRef50_P41390	Cluster: Amidophosphoribosyltransferase	463	0.5	root	1
+P41939	UniRef50_P41939	Cluster: Isocitrate dehydrogenase [NADP] cytoplasmic	1329	0.5	root	1
+Q9Y823	UniRef50_P48570	Cluster: Homocitrate synthase, cytosolic isozyme	733	0.5	cellular organisms	131567
+C5M3T7	UniRef50_P53228	Cluster: Transaldolase NQM1	123	0.5	root	1
+O74928	UniRef50_P54113	Cluster: Bifunctional purine biosynthesis protein ADE16	573	0.5	root	1
+P61829	UniRef50_P61829	Cluster: ATP synthase subunit 9, mitochondrial	222	0.5	cellular organisms	131567
+P78812	UniRef50_P78812	Cluster: 6-phosphogluconate dehydrogenase, decarboxylating	1547	0.5	root	1
+O43026	UniRef50_P78958	Cluster: Glyceraldehyde-3-phosphate dehydrogenase 1	219	0.5	cellular organisms	131567
+P05694	UniRef50_P82610	Cluster: 5-methyltetrahydropteroyltriglutamate--homocysteine methyltransferase	163	0.5	Eukaryota	2759
+P52910	UniRef50_Q01574	Cluster: Acetyl-coenzyme A synthetase 1	297	0.5	Eukaryota	2759
+C5MBE7	UniRef50_Q02216	Cluster: Malate synthase, glyoxysomal	227	0.5	cellular organisms	131567
+Q05911	UniRef50_Q05911	Cluster: Adenylosuccinate lyase	610	0.5	Eukaryota	2759
+Q08162	UniRef50_Q08162	Cluster: Exosome complex exonuclease DIS3	229	0.5	cellular organisms	131567
+Q09694	UniRef50_Q09694	Cluster: Saccharopine dehydrogenase [NAD(+), L-lysine-forming]	259	0.5	Fungi	4751
+Q10330	UniRef50_Q10330	Cluster: 60S ribosomal protein L25-A	27	0.5	Eukaryota	2759
+Q9P772	UniRef50_Q9P772	Cluster: GMP synthase [glutamine-hydrolyzing]	294	0.5	cellular organisms	131567
+Q9UT19	UniRef50_Q9UT19	Cluster: Probable 5-methyltetrahydropteroyltriglutamate--homocysteine methyltransferase	625	0.5	root	1
+Q5NIJ3	UniRef50_Q9UTJ7	Cluster: Probable succinate dehydrogenase [ubiquinone] flavoprotein subunit, mitochondrial	35	0.5	Eukaryota	2759
+Q7CKY2	UniRef50_R7Z3K0	Cluster: TIM-barrel domain-containing protein	190	0.5	cellular organisms	131567
+A0A0E1NWF8	UniRef50_S7QD40	Cluster: chitin deacetylase	663	0.5	cellular organisms	131567

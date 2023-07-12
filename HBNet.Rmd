@@ -110,16 +110,18 @@ zhou_ppi <- zhou_ppi %>%
 On obtient la liste des protéines uniques dans les interactions, qu'on va chercher à annoter avec les données d'UniProt
 
 ```{r zhou_quality_check}
-unique_interactors <- unique(
-  append(
-    zhou_ppi$interactor_1,
-    zhou_ppi$interactor_2
-    )
-  )
-length(unique_interactors)
+unique_interactors <- data.frame(
+  From = unique(c(zhou_ppi$interactor_1, zhou_ppi$interactor_2)),
+  stringsAsFactors = FALSE
+)
+length(unique_interactors$From)
 ```
 
 On écrit cette liste dans un fichier pour l'importer sur [UniProt](https://www.uniprot.org/id-mapping) pour obtenir les champs supplémentaires qui nous intéressent.
+
+```{r write_to_file}
+writeLines(unique_interactors$From, "data/unique_interactors.txt")
+```
 
 ```{r add_taxonomy}
 
@@ -156,21 +158,58 @@ unique_interactors$taxon <- mapply(
   unique_interactors$`Organism (ID)`,
   unique_interactors$`Taxonomic lineage (Ids)`
 )
+
+# Pour la suite on utilise Entry plutôt que From, car les UniProt IDs de Entry sont ceux à jour.
+writeLines(unique_interactors$Entry, "data/unique_interactors_updated.txt")
 ```
 
-On ajoute également les clusters UniRef100/90/50 (à obtenir également en lançant un job sur le site d'UniProt).
+Sur UniProt, on lance 3 jobs d'ID mapping allant des IDs de `unique_interactors_updated` vers UniRef100, UniRef90 et UniRef50. On filtre les résultats avec le bouton "filter by taxonomy" en haut à gauche pour garder seulement les mapping vers des clusters contenant de l'humain pour UniRef100/90, et contenant bacteria ou contenant fungi pour UniRef50. On exporte au format tsv.
+
+Ce premier filtre ne garde pas que les clusters contenant UNIQUEMENT le taxon d'intérêt, mais il nous simplifie le travail pour le faire. Par exemple pour bacteria, on a seulement à exclure dans R les clusters ayant "root" ou "cellular organisms" en LCA. Pour fongi, on exclut les deux précédents ainsi que "eucaryota" et "opisthokonta". Pour l'humain, on ne garde le cluster que si le LCA est "human".
+
+**Notes:**
+
+-   Certains clusters UniRef100 ne peuvent pas être étendus à Uniref90 ou Uniref50. Peut-être donc que si pour bactérie et champignon on ne map pas sur Uniref50 on devrait tenter de se rabattre sur Uniref90 puis Uniref100 ?
+
+-   Fallait-il vraiment filtrer à "100% du cluster correspond à l'espèce" ? En relisant le papier, ce qu'ils ont fait n'est pas si clair.
 
 ```{r add_uniref}
+uniref100_human <- read_tsv("data/uniref100_human.tsv")
+uniref90_human <- read_tsv("data/uniref90_human.tsv")
+uniref50_bacteria <- read_tsv("data/uniref50_bacteria.tsv")
+uniref50_fungi <- read_tsv("data/uniref50_fungi.tsv")
 
-uniref_tsv = c(
-  "uniref100" = "data/idmapping_uniref100.tsv",
-  "uniref90" = "data/idmapping_uniref90.tsv",
-  "uniref50" = "data/idmapping_uniref50.tsv"
-)
+# lca_to_remove <- c("root", "cellular organisms", "Eukaryota", "Opisthokonta")
+lca_to_remove <- c(1, 131567, 2759, 33154)
+uniref100_onlyhuman <- uniref100_human %>% filter(`Common taxon ID` == 9606)
+uniref90_onlyhuman <- uniref90_human %>% filter(`Common taxon ID` == 9606)
+uniref50_onlybacteria <- uniref50_bacteria %>%
+  filter(!(`Common taxon ID` %in% lca_to_remove))
+uniref50_onlyfungi <- uniref50_fungi %>%
+  filter(!(`Common taxon ID` %in% lca_to_remove))
 
-for (uniref in uniref_tsv) {
-  
-}
+# Ajouter les clusters à unique_interactors SEULEMENT SI celui-ci ne contient que des bactéries ou que des humains
+unique_interactors <- unique_interactors %>%
+  mutate(
+    homogen_cluster = ifelse(
+      taxon == "bacteria" & Entry %in% uniref50_onlybacteria$From,
+      uniref50_onlybacteria$`Cluster ID`[match(Entry, uniref50_onlybacteria$From)],
+      ifelse(
+        taxon == "fungi" & Entry %in% uniref50_onlyfungi$From,
+        uniref50_onlyfungi$`Cluster ID`[match(Entry, uniref50_onlyfungi$From)],
+        ifelse(
+          taxon == "human" & Entry %in% uniref90_onlyhuman$From,
+          uniref90_onlyhuman$`Cluster ID`[match(Entry, uniref90_onlyhuman$From)],
+          ifelse(
+            taxon == "human" & Entry %in% uniref100_onlyhuman$From,
+            uniref100_onlyhuman$`Cluster ID`[match(Entry, uniref100_onlyhuman$From)],
+            NA_character_
+          )
+        )
+      )
+    ),
+    identity = as.integer(str_extract(homogen_cluster, "(?<=UniRef)\\d+")) #50, 90, 100
+  )
 ```
 
 On met à jour les IDs UniProt de 2021 (publication) qui ont été "merged" depuis.
@@ -191,11 +230,9 @@ zhou_ppi$interactor_2 <- sapply(
 )
 ```
 
-Ajoutons les taxons au PPIs de \`zhou_ppi\`, et filtrons les PPI bactérie-humain ou .
+Ajoutons les taxons au PPIs de \`zhou_ppi\`, et filtrons les PPI bactérie-humain ou humain-fongi.
 
 ```{r human_bacteria_filter}
-
-
 zhou_ppi$taxon_1 <- sapply(
   zhou_ppi$interactor_1,
   function(x) {
@@ -210,13 +247,46 @@ zhou_ppi$taxon_2 <- sapply(
   }
 )
 
-
 zhou_ppi$ppi_taxons <- paste(zhou_ppi$taxon_1, zhou_ppi$taxon_2, sep=",")
+
+zhou_ppi$cluster_1 <- sapply(
+  zhou_ppi$interactor_1,
+  function(x) {
+    with(unique_interactors, homogen_cluster[Entry==x])
+  }
+)
+
+zhou_ppi$cluster_2 <- sapply(
+  zhou_ppi$interactor_2,
+  function(x) {
+    with(unique_interactors, homogen_cluster[Entry==x])
+  }
+)
+
 table(zhou_ppi$ppi_taxons)
 
 skin_ppi <- zhou_ppi %>% 
-  filter(ppi_taxons %in% c("human,bacteria", "bacteria,human"))
+  filter(!is.na(cluster_1) & !is.na(cluster_2))
 ```
+
+`skin_ppi` contient les PPIs sur lesquelles un mapping est possible. On mappe sur les clusters.
+
+## Données métagénomiques
+
+Alban a donné `data/acne_all_genefamilies.tsv`, qui contient les abondances de protéines (clusters UniRef) pour les cohortes acné et sain issus de Barnard et al. (2016).
+
+```{r barnard_genefamilies}
+
+barnard_genefamilies <- read_tsv("data/acne_all_genefamilies.tsv")
+
+smaller_barnard <- barnard_genefamilies[!grepl("\\|", barnard_genefamilies$`# Gene Family`), ]
+
+#write.table(smaller_barnard, "data/smaller_barnard.tsv", sep = "\t", quote = FALSE, row.names = FALSE)
+```
+
+\_\_\_\_\_\_\_\_\_\_\_\_\_\_\_\_\_\_\_\_\_\_\_\_\_\_\_\_\_\_\_\_\_\_\_\_\_\_\_\_\_\_\_\_\_\_\_\_\_\_\_\_\_
+
+OLD
 
 Attribuons les espèces aux ids
 

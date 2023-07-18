@@ -114,6 +114,7 @@ unique_interactors <- data.frame(
   From = unique(c(zhou_ppi$interactor_1, zhou_ppi$interactor_2)),
   stringsAsFactors = FALSE
 )
+
 length(unique_interactors$From)
 ```
 
@@ -265,8 +266,22 @@ zhou_ppi$cluster_2 <- sapply(
 
 table(zhou_ppi$ppi_taxons)
 
+
 skin_ppi <- zhou_ppi %>% 
-  filter(!is.na(cluster_1) & !is.na(cluster_2))
+  filter(!is.na(cluster_1) & !is.na(cluster_2)) %>%
+  mutate(to_switch = if_else(taxon_1!='human', TRUE, FALSE))
+
+coupled_columns <- list(
+  c("interactor_1", "interactor_2"),
+  c("taxon_1", "taxon_2"),
+  c("cluster_1", "cluster_2")
+)
+
+for (columns in coupled_columns) {
+  print(columns)
+  skin_ppi[which(skin_ppi$to_switch), columns] <- 
+    rev(skin_ppi[which(skin_ppi$to_switch), columns])
+}
 ```
 
 `skin_ppi` contient les PPIs sur lesquelles un mapping est possible. On mappe sur les clusters.
@@ -280,8 +295,76 @@ Alban a donné `data/acne_all_genefamilies.tsv`, qui contient les abondances de 
 barnard_genefamilies <- read_tsv("data/acne_all_genefamilies.tsv")
 
 smaller_barnard <- barnard_genefamilies[!grepl("\\|", barnard_genefamilies$`# Gene Family`), ]
+smaller_barnard <- smaller_barnard[-1,] # enlever UNMAPPED
+smaller_barnard$`# Gene Family` <- substr(
+  smaller_barnard$`# Gene Family`,
+  start = 10,
+  stop = nchar(smaller_barnard$`# Gene Family`)
+) # enlever "UniRef90_"
 
-#write.table(smaller_barnard, "data/smaller_barnard.tsv", sep = "\t", quote = FALSE, row.names = FALSE)
+frac_size <- 100000
+n_files <- nrow(smaller_barnard) %/% frac_size + 1
+
+for (i in 1:n_files) {
+  low_bound <- (i - 1) * frac_size + 1
+  up_bound <- min(i*frac_size, nrow(smaller_barnard))
+  frac_barnard <- smaller_barnard$`# Gene Family`[low_bound:up_bound]
+  writeLines(frac_barnard, paste0("data/barnard_ref90_2019_", i, ".txt"))
+}
+
+
+```
+
+On mappe sur UniProt **(UniProtKB_AC-ID → UniRef50)**. Malheureusement, énormément d'IDs ne mappent pas. Il va peut-être falloir utiliser UniRef de 2019 pour être cohérent avec Humann3.
+
+```{r barnard_uniref50_mapped}
+
+barnard_uniref50_2023 <- rbind(
+  read_tsv("data/barnard_ref50_2023_1.tsv"),
+  read_tsv("data/barnard_ref50_2023_2.tsv"),
+  read_tsv("data/barnard_ref50_2023_3.tsv"),
+  read_tsv("data/barnard_ref50_2023_4.tsv"),
+  read_tsv("data/barnard_ref50_2023_5.tsv"),
+  read_tsv("data/barnard_ref50_2023_6.tsv")
+)
+colnames(barnard_uniref50_2023) <- c("# Gene Family", "Cluster ID")
+
+print(
+  paste(
+    "Pourcentage de mapping réussi:",
+    100 * nrow(barnard_uniref50_2023) / nrow(smaller_barnard)
+  )
+)
+```
+
+On veut ensuite calculer les "expositions" des protéines humaines en sommant les abondances des intéracteurs bactériens de cette protéine, au sein du sample.
+
+```{r human_prots_exposition}
+
+# skin_ppi
+# barnard_uniref50_2023
+# smaller_barnard
+
+
+smaller_barnard <- left_join(smaller_barnard, barnard_uniref50_2023, by = "# Gene Family") %>%
+  relocate("# Gene Family","Cluster ID")
+
+human_prot_exposition <- data.frame(
+  stringsAsFactors = FALSE,
+  matrix(
+    ncol = length(colnames(smaller_barnard)) - 1,
+    nrow = length(unique(skin_ppi$cluster_1))
+  )
+)
+
+colnames(human_prot_exposition) <- c("uniref100", colnames(smaller_barnard)[-c(1:2)])
+
+human_prot_exposition$uniref100 <- unique(skin_ppi$cluster_1)
+
+for (sample in colnames(human_prot_exposition)[-1]) {
+  print(sample)
+}
+  
 ```
 
 \_\_\_\_\_\_\_\_\_\_\_\_\_\_\_\_\_\_\_\_\_\_\_\_\_\_\_\_\_\_\_\_\_\_\_\_\_\_\_\_\_\_\_\_\_\_\_\_\_\_\_\_\_

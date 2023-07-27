@@ -1,3 +1,6 @@
 idmapping_taxonomy.tsv
+uniref50.xml
+uniref90.xml
+uniref100.xml
+sorted_mapping_taxo_ref*.tsv
 acne_all_genefamilies.tsv
-barnard_*

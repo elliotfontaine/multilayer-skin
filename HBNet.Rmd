@@ -2,10 +2,7 @@
 title: "__**PPI humain-microbiote**__"
 author: "Elliot Fontaine"
 date: "`r Sys.Date()`"
-output:
-  prettydoc::html_pretty:
-    theme: cayman
-    highlight: github
+output: rmdformats::material
 ---
 
 ```{r setup, include=FALSE}
@@ -18,9 +15,7 @@ knitr::opts_chunk$set(
 )
 ```
 
-Méthodes basées sur Zhou et al. (2022), <https://doi.org/10.1186/s13059-022-02643-9>
-
-# **0. Initialisation de l'environnement de travail**
+# 0. Initialisation de l'environnement de travail
 
 Choisir le répertoire de travail. En plus de ce `.Rmd`, il doit contenir dans un répertoire 'data' les fichiers:
 
@@ -53,11 +48,13 @@ library(myTAI)
 
 # 1. Création de la base de données "HBNet"
 
-En suivant le protocole de Zhou et al. (2022), nous vous créer une base de données d'interactions PPIs humain - bactérie/fungus, où les identifiants ne sont pas des protéines mais des clusters d'homologie UniRef, afin de propager les PPIs aux protéines proches structurellement. Les informations de cette base de données sont ensuite utilisées pour traiter les données métagénomiques de cohortes sur l'acné ou d'autres maladies cutanées.
+En suivant le protocole de [Zhou et al. (2022)](https://doi.org/10.1186/s13059-022-02643-9), nous voulons créer une base de données d'interactions PPIs humain - bactérie/fungus, où les identifiants ne sont pas des protéines mais des clusters d'homologie UniRef, afin de propager les PPIs aux protéines proches structurellement. Les informations de cette base de données sont ensuite utilisées pour traiter les données métagénomiques de cohortes sur l'acné (ou d'autres maladies cutanées).
+
+!["**An outline of our homology mapping procedure and alignment.** Depiction of the interaction network inference and protein detection pipeline for bacterial/microbiome (blue)-human (orange) PPIs."](protocole_zhou22.png)
 
 ## a. Listes de PPI venant de Zhou et al. (2022)
 
-Voir **"Additional file 9: Table S8"** de la publication. Le fichier contient les IDs UniProt des PPIs inter-spécifiques, avant tout filtre. Les interactions proviennent de diverses grosses bases de données, ainsi que de publications (text mining manuel).
+Voir **Additional file 9: Table S8** de la publication. Le fichier contient les IDs UniProt des PPIs inter-spécifiques, avant tout filtre ou mapping vers UniRef. Les interactions proviennent de diverses grosses bases de données, ainsi que de publications (text mining manuel).
 
 ```{r zhou_to_df}
 zhou_ppi <- read_tsv("data/zhou2022_list_ppi.txt")
@@ -80,7 +77,7 @@ unique_interactors <- data.frame(
   stringsAsFactors = FALSE
 )
 
-length(unique_interactors$From)
+print(length(unique_interactors$From))
 ```
 
 On écrit cette liste dans un fichier pour l'importer sur [UniProt](https://www.uniprot.org/id-mapping) pour obtenir les champs supplémentaires qui nous intéressent.
@@ -101,7 +98,7 @@ unique_interactors[1:3,]
 
 On peut déjà remarquer que certaines espèces sont sur-représentées dans les PPIs (*Yersinia pestis* par exemple). Les PPIs inter-spécifiques ont été bien plus étudiées chez les pathogènes que les commensaux. C'est un biais possible, mais on postule que l'élargissement des PPIs par homologie de séquence suffit à le contourner.
 
-```{r statistic_species echo=FALSE}
+```{r statistic_species, echo=FALSE}
 
 biggest_10_species <- data.frame(sort(table(unique_interactors$Organism), decreasing = TRUE)[1:10]) %>%
   setNames(c("Species", "Occurences"))
@@ -239,6 +236,29 @@ done < "$identifiers_file"
 # On exclue les lignes qui contiennent "-" dans la colonne 1.
 grep -P "^[A-Z0-9]+\t" "temp_$output_file" > "$output_file"
 rm "temp_$output_file"
+```
+
+```{r}
+make_colnames <- function(uniref_db) {
+  columns = c(
+    "From",
+    paste0("Cluster_", uniref_db),
+    paste0("TaxoID_", uniref_db)
+  )
+  return(columns)
+}
+
+mapped_interactors_uniref <- merge(
+  merge(
+    read_tsv("data/mapped_interactors_ref50.tsv", col_names = make_colnames("UniRef50")),
+    read_tsv("data/mapped_interactors_ref90.tsv", col_names = make_colnames("UniRef90")),
+    by = "From"
+  ),
+  read_tsv("data/mapped_interactors_ref100.tsv", col_names = make_colnames("UniRef100")),
+  by = "From"
+)
+
+
 ```
 
 On peut enlever les quelques accessions qui n'ont pas eu de matchs lors du premier ID mapping sur le site d'UniProt (seulement 29).
@@ -418,7 +438,7 @@ rm(frac_size, n_files)
 
 On mappe sur UniProt **(UniProtKB_AC-ID → UniRef50)**. Malheureusement, énormément d'IDs ne mappent pas. Il va peut-être falloir utiliser UniRef de 2019 pour être cohérent avec Humann3.
 
-```{r barnard_uniref50_mapped}
+```{r barnard_uniref50_mapped, eval=FALSE}
 
 barnard_uniref50_2023 <- rbind(
   read_tsv("data/barnard_ref50_2023_1.tsv"),
@@ -440,7 +460,7 @@ print(
 
 On veut ensuite calculer les "expositions" des protéines humaines en sommant les abondances des interacteurs bactériens de cette protéine, au sein du sample.
 
-```{r human_prots_exposition}
+```{r human_prots_exposition, eval=FALSE}
 
 # skin_ppi
 # barnard_uniref50_2023
@@ -478,7 +498,7 @@ human_prot_exposition$uniref100 <- unique(skin_ppi$cluster_1)
 
 \_\_\_\_\_\_\_\_\_\_\_\_\_\_\_\_\_\_\_\_\_\_\_\_\_\_\_\_\_\_\_\_\_\_\_\_\_\_\_\_\_\_\_\_\_\_\_\_\_\_\_\_\_
 
-# **[OLD]1. Building a putative bacteria‑human protein‑protein interaction (PPI) network**
+# [OLD]1. Building a putative bacteria‑human protein‑protein interaction (PPI) network
 
 Il n'y a presque aucun PPI humain-bactérie dans biogrid
 
@@ -529,7 +549,7 @@ OLDER
 
 Attribuons les espèces aux ids
 
-```{r add_taxonomy, eval=FALSE}
+```{r OLDadd_taxonomy, eval=FALSE}
 up <- UniProt.ws(taxId=9606)
 res <- select(
   up,

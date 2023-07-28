@@ -1112,7 +1112,15 @@ mining manuel).</p>
 <span id="cb3-7"><a href="#cb3-7" aria-hidden="true" tabindex="-1"></a>    <span class="at">interactor_2 =</span> <span class="fu">str_extract</span>(Experimental_Interaction, <span class="st">&quot;(?&lt;=&#39;, &#39;)[A-Z0-9]+&quot;</span>),</span>
 <span id="cb3-8"><a href="#cb3-8" aria-hidden="true" tabindex="-1"></a>    <span class="at">publications =</span> <span class="fu">str_remove_all</span>(publications, <span class="st">&quot;</span><span class="sc">\\</span><span class="st">{|</span><span class="sc">\\</span><span class="st">}|&#39;&quot;</span>) <span class="co"># Expressions régulières proposées par chatGPT</span></span>
 <span id="cb3-9"><a href="#cb3-9" aria-hidden="true" tabindex="-1"></a>  ) <span class="sc">%&gt;%</span></span>
-<span id="cb3-10"><a href="#cb3-10" aria-hidden="true" tabindex="-1"></a>  dplyr<span class="sc">::</span><span class="fu">select</span>(interactor_1, interactor_2, db, publications) <span class="co"># On ne garde que les deux premiers IDs d&#39;interacteurs</span></span></code></pre></div>
+<span id="cb3-10"><a href="#cb3-10" aria-hidden="true" tabindex="-1"></a>  dplyr<span class="sc">::</span><span class="fu">select</span>(interactor_1, interactor_2, db, publications) <span class="co"># On ne garde que les deux premiers IDs d&#39;interacteurs</span></span>
+<span id="cb3-11"><a href="#cb3-11" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb3-12"><a href="#cb3-12" aria-hidden="true" tabindex="-1"></a>zhou_ppi[<span class="dv">1</span><span class="sc">:</span><span class="dv">3</span>,]</span>
+<span id="cb3-13"><a href="#cb3-13" aria-hidden="true" tabindex="-1"></a><span class="do">## # A tibble: 3 × 4</span></span>
+<span id="cb3-14"><a href="#cb3-14" aria-hidden="true" tabindex="-1"></a><span class="do">##   interactor_1 interactor_2 db           publications</span></span>
+<span id="cb3-15"><a href="#cb3-15" aria-hidden="true" tabindex="-1"></a><span class="do">##   &lt;chr&gt;        &lt;chr&gt;        &lt;chr&gt;        &lt;chr&gt;       </span></span>
+<span id="cb3-16"><a href="#cb3-16" aria-hidden="true" tabindex="-1"></a><span class="do">## 1 P03427       A0A024R0Q3   HPIdb;IntAct 28611246    </span></span>
+<span id="cb3-17"><a href="#cb3-17" aria-hidden="true" tabindex="-1"></a><span class="do">## 2 P03427       A0A024R382   HPIdb;IntAct 28611246    </span></span>
+<span id="cb3-18"><a href="#cb3-18" aria-hidden="true" tabindex="-1"></a><span class="do">## 3 E9PKA7       P03468       HPIdb        26789921</span></span></code></pre></div>
 <p>On se crée une liste des protéines uniques dans les interactions,
 qu’on va chercher à annoter avec les données d’UniProt.</p>
 <div class="sourceCode" id="cb4"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb4-1"><a href="#cb4-1" aria-hidden="true" tabindex="-1"></a>unique_interactors <span class="ot">&lt;-</span> <span class="fu">data.frame</span>(</span>
@@ -1120,7 +1128,8 @@ qu’on va chercher à annoter avec les données d’UniProt.</p>
 <span id="cb4-3"><a href="#cb4-3" aria-hidden="true" tabindex="-1"></a>  <span class="at">stringsAsFactors =</span> <span class="cn">FALSE</span></span>
 <span id="cb4-4"><a href="#cb4-4" aria-hidden="true" tabindex="-1"></a>)</span>
 <span id="cb4-5"><a href="#cb4-5" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb4-6"><a href="#cb4-6" aria-hidden="true" tabindex="-1"></a><span class="fu">print</span>(<span class="fu">length</span>(unique_interactors<span class="sc">$</span>From))</span></code></pre></div>
+<span id="cb4-6"><a href="#cb4-6" aria-hidden="true" tabindex="-1"></a><span class="fu">length</span>(unique_interactors<span class="sc">$</span>From)</span>
+<span id="cb4-7"><a href="#cb4-7" aria-hidden="true" tabindex="-1"></a><span class="do">## [1] 8937</span></span></code></pre></div>
 <p>On écrit cette liste dans un fichier pour l’importer sur <a href="https://www.uniprot.org/id-mapping">UniProt</a> pour obtenir les
 champs supplémentaires qui nous intéressent.</p>
 <div class="sourceCode" id="cb5"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb5-1"><a href="#cb5-1" aria-hidden="true" tabindex="-1"></a><span class="fu">writeLines</span>(unique_interactors<span class="sc">$</span>From, <span class="st">&quot;data/unique_interactors.txt&quot;</span>)</span></code></pre></div>
@@ -1131,8 +1140,17 @@ champs supplémentaires qui nous intéressent.</p>
 AC/ID -&gt; UniProtKB. On exporte ensuite sous format tabulé, avec les
 colonnes suivantes:</p>
 <div class="sourceCode" id="cb6"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb6-1"><a href="#cb6-1" aria-hidden="true" tabindex="-1"></a>unique_interactors <span class="ot">&lt;-</span> <span class="fu">read_tsv</span>(<span class="st">&quot;data/idmapping_taxonomy.tsv&quot;</span>)</span>
-<span id="cb6-2"><a href="#cb6-2" aria-hidden="true" tabindex="-1"></a><span class="fu">length</span>(unique_interactors<span class="sc">$</span>From) <span class="co"># Devrait être la même que précédemment</span></span>
-<span id="cb6-3"><a href="#cb6-3" aria-hidden="true" tabindex="-1"></a>unique_interactors[<span class="dv">1</span><span class="sc">:</span><span class="dv">3</span>,]</span></code></pre></div>
+<span id="cb6-2"><a href="#cb6-2" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb6-3"><a href="#cb6-3" aria-hidden="true" tabindex="-1"></a><span class="fu">length</span>(unique_interactors<span class="sc">$</span>From) <span class="co"># Devrait être la même que précédemment</span></span>
+<span id="cb6-4"><a href="#cb6-4" aria-hidden="true" tabindex="-1"></a><span class="do">## [1] 8937</span></span>
+<span id="cb6-5"><a href="#cb6-5" aria-hidden="true" tabindex="-1"></a>unique_interactors[<span class="dv">1</span><span class="sc">:</span><span class="dv">3</span>,]</span>
+<span id="cb6-6"><a href="#cb6-6" aria-hidden="true" tabindex="-1"></a><span class="do">## # A tibble: 3 × 6</span></span>
+<span id="cb6-7"><a href="#cb6-7" aria-hidden="true" tabindex="-1"></a><span class="do">##   From   Entry  Annotation Organism       `Organism (ID)` Taxonomic lineage (I…¹</span></span>
+<span id="cb6-8"><a href="#cb6-8" aria-hidden="true" tabindex="-1"></a><span class="do">##   &lt;chr&gt;  &lt;chr&gt;       &lt;dbl&gt; &lt;chr&gt;                    &lt;dbl&gt; &lt;chr&gt;                 </span></span>
+<span id="cb6-9"><a href="#cb6-9" aria-hidden="true" tabindex="-1"></a><span class="do">## 1 P03427 P03427          5 Influenza A v…          381518 10239 (superkingdom),…</span></span>
+<span id="cb6-10"><a href="#cb6-10" aria-hidden="true" tabindex="-1"></a><span class="do">## 2 E9PKA7 E9PKA7          2 Homo sapiens …            9606 131567 (no rank), 275…</span></span>
+<span id="cb6-11"><a href="#cb6-11" aria-hidden="true" tabindex="-1"></a><span class="do">## 3 Q5NEQ5 Q5NEQ5          2 Francisella t…          177416 131567 (no rank), 2 (…</span></span>
+<span id="cb6-12"><a href="#cb6-12" aria-hidden="true" tabindex="-1"></a><span class="do">## # ℹ abbreviated name: ¹​`Taxonomic lineage (Ids)`</span></span></code></pre></div>
 <p>On peut déjà remarquer que certaines espèces sont sur-représentées
 dans les PPIs (<em>Yersinia pestis</em> par exemple). Les PPIs
 inter-spécifiques ont été bien plus étudiées chez les pathogènes que les
@@ -1142,37 +1160,38 @@ des PPIs par homologie de séquence suffit à le contourner.</p>
 <p>En se basant sur la colonne “taxonomic lineage”, on détermine le
 groupe d’où provient la protéine. Au final, on ne s’intéresse qu’aux
 protéines humaines, bactériennes et fongiques de notre système peau.</p>
-<div class="sourceCode" id="cb7"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb7-1"><a href="#cb7-1" aria-hidden="true" tabindex="-1"></a>get_taxon <span class="ot">&lt;-</span> <span class="cf">function</span>(organism_id, lineage) {</span>
-<span id="cb7-2"><a href="#cb7-2" aria-hidden="true" tabindex="-1"></a>  taxon <span class="ot">&lt;-</span> <span class="cn">NA</span></span>
-<span id="cb7-3"><a href="#cb7-3" aria-hidden="true" tabindex="-1"></a>  <span class="cf">if</span> (<span class="sc">!</span><span class="fu">is.na</span>(organism_id) <span class="sc">&amp;&amp;</span> organism_id <span class="sc">==</span> <span class="st">&quot;9606&quot;</span>) {</span>
-<span id="cb7-4"><a href="#cb7-4" aria-hidden="true" tabindex="-1"></a>    taxon <span class="ot">=</span> <span class="st">&quot;human&quot;</span></span>
-<span id="cb7-5"><a href="#cb7-5" aria-hidden="true" tabindex="-1"></a>  }</span>
-<span id="cb7-6"><a href="#cb7-6" aria-hidden="true" tabindex="-1"></a>  <span class="cf">else</span> <span class="cf">if</span> (<span class="sc">!</span><span class="fu">is.na</span>(lineage) <span class="sc">&amp;&amp;</span> <span class="fu">grepl</span>(<span class="st">&quot;2 (superkingdom)&quot;</span>, lineage, <span class="at">fixed =</span> <span class="cn">TRUE</span>)) {</span>
-<span id="cb7-7"><a href="#cb7-7" aria-hidden="true" tabindex="-1"></a>    taxon <span class="ot">=</span> <span class="st">&quot;bacteria&quot;</span></span>
-<span id="cb7-8"><a href="#cb7-8" aria-hidden="true" tabindex="-1"></a>  }</span>
-<span id="cb7-9"><a href="#cb7-9" aria-hidden="true" tabindex="-1"></a>  <span class="cf">else</span> <span class="cf">if</span> (<span class="sc">!</span><span class="fu">is.na</span>(lineage) <span class="sc">&amp;&amp;</span> <span class="fu">grepl</span>(<span class="st">&quot;10239 (superkingdom)&quot;</span>, lineage, <span class="at">fixed =</span> <span class="cn">TRUE</span>)) {</span>
-<span id="cb7-10"><a href="#cb7-10" aria-hidden="true" tabindex="-1"></a>    taxon <span class="ot">=</span> <span class="st">&quot;virus&quot;</span></span>
-<span id="cb7-11"><a href="#cb7-11" aria-hidden="true" tabindex="-1"></a>  }</span>
-<span id="cb7-12"><a href="#cb7-12" aria-hidden="true" tabindex="-1"></a>  <span class="cf">else</span> <span class="cf">if</span> (<span class="sc">!</span><span class="fu">is.na</span>(lineage) <span class="sc">&amp;&amp;</span> <span class="fu">grepl</span>(<span class="st">&quot;33208 (kingdom)&quot;</span>, lineage, <span class="at">fixed =</span> <span class="cn">TRUE</span>)) {</span>
-<span id="cb7-13"><a href="#cb7-13" aria-hidden="true" tabindex="-1"></a>    taxon <span class="ot">=</span> <span class="st">&quot;metazoa&quot;</span></span>
-<span id="cb7-14"><a href="#cb7-14" aria-hidden="true" tabindex="-1"></a>  }</span>
-<span id="cb7-15"><a href="#cb7-15" aria-hidden="true" tabindex="-1"></a>  <span class="cf">else</span> <span class="cf">if</span> (<span class="sc">!</span><span class="fu">is.na</span>(lineage) <span class="sc">&amp;&amp;</span> <span class="fu">grepl</span>(<span class="st">&quot;4751 (kingdom)&quot;</span>, lineage, <span class="at">fixed =</span> <span class="cn">TRUE</span>)) {</span>
-<span id="cb7-16"><a href="#cb7-16" aria-hidden="true" tabindex="-1"></a>    taxon <span class="ot">=</span> <span class="st">&quot;fungi&quot;</span></span>
-<span id="cb7-17"><a href="#cb7-17" aria-hidden="true" tabindex="-1"></a>  }</span>
-<span id="cb7-18"><a href="#cb7-18" aria-hidden="true" tabindex="-1"></a>  <span class="cf">else</span> <span class="cf">if</span> (<span class="sc">!</span><span class="fu">is.na</span>(lineage) <span class="sc">&amp;&amp;</span> <span class="fu">grepl</span>(<span class="st">&quot;2759 (superkingdom)&quot;</span>, lineage, <span class="at">fixed =</span> <span class="cn">TRUE</span>)) {</span>
-<span id="cb7-19"><a href="#cb7-19" aria-hidden="true" tabindex="-1"></a>    taxon <span class="ot">=</span> <span class="st">&quot;eukaryota&quot;</span></span>
-<span id="cb7-20"><a href="#cb7-20" aria-hidden="true" tabindex="-1"></a>  }</span>
-<span id="cb7-21"><a href="#cb7-21" aria-hidden="true" tabindex="-1"></a>  <span class="cf">else</span> <span class="cf">if</span> (<span class="sc">!</span><span class="fu">is.na</span>(lineage) <span class="sc">&amp;&amp;</span> <span class="fu">grepl</span>(<span class="st">&quot;2157 (superkingdom)&quot;</span>, lineage, <span class="at">fixed =</span> <span class="cn">TRUE</span>)) {</span>
-<span id="cb7-22"><a href="#cb7-22" aria-hidden="true" tabindex="-1"></a>    taxon <span class="ot">=</span> <span class="st">&quot;archaea&quot;</span></span>
-<span id="cb7-23"><a href="#cb7-23" aria-hidden="true" tabindex="-1"></a>  }</span>
-<span id="cb7-24"><a href="#cb7-24" aria-hidden="true" tabindex="-1"></a>  <span class="fu">return</span>(taxon)</span>
-<span id="cb7-25"><a href="#cb7-25" aria-hidden="true" tabindex="-1"></a>}</span>
-<span id="cb7-26"><a href="#cb7-26" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb7-27"><a href="#cb7-27" aria-hidden="true" tabindex="-1"></a>unique_interactors<span class="sc">$</span>taxon <span class="ot">&lt;-</span> <span class="fu">mapply</span>(</span>
-<span id="cb7-28"><a href="#cb7-28" aria-hidden="true" tabindex="-1"></a>  get_taxon,</span>
-<span id="cb7-29"><a href="#cb7-29" aria-hidden="true" tabindex="-1"></a>  unique_interactors<span class="sc">$</span><span class="st">`</span><span class="at">Organism (ID)</span><span class="st">`</span>,</span>
-<span id="cb7-30"><a href="#cb7-30" aria-hidden="true" tabindex="-1"></a>  unique_interactors<span class="sc">$</span><span class="st">`</span><span class="at">Taxonomic lineage (Ids)</span><span class="st">`</span></span>
-<span id="cb7-31"><a href="#cb7-31" aria-hidden="true" tabindex="-1"></a>)</span></code></pre></div>
+<div class="sourceCode" id="cb7"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb7-1"><a href="#cb7-1" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb7-2"><a href="#cb7-2" aria-hidden="true" tabindex="-1"></a>get_taxon <span class="ot">&lt;-</span> <span class="cf">function</span>(organism_id, lineage) {</span>
+<span id="cb7-3"><a href="#cb7-3" aria-hidden="true" tabindex="-1"></a>  taxon <span class="ot">&lt;-</span> <span class="cn">NA</span></span>
+<span id="cb7-4"><a href="#cb7-4" aria-hidden="true" tabindex="-1"></a>  <span class="cf">if</span> (<span class="sc">!</span><span class="fu">is.na</span>(organism_id) <span class="sc">&amp;&amp;</span> organism_id <span class="sc">==</span> <span class="st">&quot;9606&quot;</span>) {</span>
+<span id="cb7-5"><a href="#cb7-5" aria-hidden="true" tabindex="-1"></a>    taxon <span class="ot">=</span> <span class="st">&quot;human&quot;</span></span>
+<span id="cb7-6"><a href="#cb7-6" aria-hidden="true" tabindex="-1"></a>  }</span>
+<span id="cb7-7"><a href="#cb7-7" aria-hidden="true" tabindex="-1"></a>  <span class="cf">else</span> <span class="cf">if</span> (<span class="sc">!</span><span class="fu">is.na</span>(lineage) <span class="sc">&amp;&amp;</span> <span class="fu">grepl</span>(<span class="st">&quot;2 (superkingdom)&quot;</span>, lineage, <span class="at">fixed =</span> <span class="cn">TRUE</span>)) {</span>
+<span id="cb7-8"><a href="#cb7-8" aria-hidden="true" tabindex="-1"></a>    taxon <span class="ot">=</span> <span class="st">&quot;bacteria&quot;</span></span>
+<span id="cb7-9"><a href="#cb7-9" aria-hidden="true" tabindex="-1"></a>  }</span>
+<span id="cb7-10"><a href="#cb7-10" aria-hidden="true" tabindex="-1"></a>  <span class="cf">else</span> <span class="cf">if</span> (<span class="sc">!</span><span class="fu">is.na</span>(lineage) <span class="sc">&amp;&amp;</span> <span class="fu">grepl</span>(<span class="st">&quot;10239 (superkingdom)&quot;</span>, lineage, <span class="at">fixed =</span> <span class="cn">TRUE</span>)) {</span>
+<span id="cb7-11"><a href="#cb7-11" aria-hidden="true" tabindex="-1"></a>    taxon <span class="ot">=</span> <span class="st">&quot;virus&quot;</span></span>
+<span id="cb7-12"><a href="#cb7-12" aria-hidden="true" tabindex="-1"></a>  }</span>
+<span id="cb7-13"><a href="#cb7-13" aria-hidden="true" tabindex="-1"></a>  <span class="cf">else</span> <span class="cf">if</span> (<span class="sc">!</span><span class="fu">is.na</span>(lineage) <span class="sc">&amp;&amp;</span> <span class="fu">grepl</span>(<span class="st">&quot;33208 (kingdom)&quot;</span>, lineage, <span class="at">fixed =</span> <span class="cn">TRUE</span>)) {</span>
+<span id="cb7-14"><a href="#cb7-14" aria-hidden="true" tabindex="-1"></a>    taxon <span class="ot">=</span> <span class="st">&quot;metazoa&quot;</span></span>
+<span id="cb7-15"><a href="#cb7-15" aria-hidden="true" tabindex="-1"></a>  }</span>
+<span id="cb7-16"><a href="#cb7-16" aria-hidden="true" tabindex="-1"></a>  <span class="cf">else</span> <span class="cf">if</span> (<span class="sc">!</span><span class="fu">is.na</span>(lineage) <span class="sc">&amp;&amp;</span> <span class="fu">grepl</span>(<span class="st">&quot;4751 (kingdom)&quot;</span>, lineage, <span class="at">fixed =</span> <span class="cn">TRUE</span>)) {</span>
+<span id="cb7-17"><a href="#cb7-17" aria-hidden="true" tabindex="-1"></a>    taxon <span class="ot">=</span> <span class="st">&quot;fungi&quot;</span></span>
+<span id="cb7-18"><a href="#cb7-18" aria-hidden="true" tabindex="-1"></a>  }</span>
+<span id="cb7-19"><a href="#cb7-19" aria-hidden="true" tabindex="-1"></a>  <span class="cf">else</span> <span class="cf">if</span> (<span class="sc">!</span><span class="fu">is.na</span>(lineage) <span class="sc">&amp;&amp;</span> <span class="fu">grepl</span>(<span class="st">&quot;2759 (superkingdom)&quot;</span>, lineage, <span class="at">fixed =</span> <span class="cn">TRUE</span>)) {</span>
+<span id="cb7-20"><a href="#cb7-20" aria-hidden="true" tabindex="-1"></a>    taxon <span class="ot">=</span> <span class="st">&quot;eukaryota&quot;</span></span>
+<span id="cb7-21"><a href="#cb7-21" aria-hidden="true" tabindex="-1"></a>  }</span>
+<span id="cb7-22"><a href="#cb7-22" aria-hidden="true" tabindex="-1"></a>  <span class="cf">else</span> <span class="cf">if</span> (<span class="sc">!</span><span class="fu">is.na</span>(lineage) <span class="sc">&amp;&amp;</span> <span class="fu">grepl</span>(<span class="st">&quot;2157 (superkingdom)&quot;</span>, lineage, <span class="at">fixed =</span> <span class="cn">TRUE</span>)) {</span>
+<span id="cb7-23"><a href="#cb7-23" aria-hidden="true" tabindex="-1"></a>    taxon <span class="ot">=</span> <span class="st">&quot;archaea&quot;</span></span>
+<span id="cb7-24"><a href="#cb7-24" aria-hidden="true" tabindex="-1"></a>  }</span>
+<span id="cb7-25"><a href="#cb7-25" aria-hidden="true" tabindex="-1"></a>  <span class="fu">return</span>(taxon)</span>
+<span id="cb7-26"><a href="#cb7-26" aria-hidden="true" tabindex="-1"></a>}</span>
+<span id="cb7-27"><a href="#cb7-27" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb7-28"><a href="#cb7-28" aria-hidden="true" tabindex="-1"></a>unique_interactors<span class="sc">$</span>taxon <span class="ot">&lt;-</span> <span class="fu">mapply</span>(</span>
+<span id="cb7-29"><a href="#cb7-29" aria-hidden="true" tabindex="-1"></a>  get_taxon,</span>
+<span id="cb7-30"><a href="#cb7-30" aria-hidden="true" tabindex="-1"></a>  unique_interactors<span class="sc">$</span><span class="st">`</span><span class="at">Organism (ID)</span><span class="st">`</span>,</span>
+<span id="cb7-31"><a href="#cb7-31" aria-hidden="true" tabindex="-1"></a>  unique_interactors<span class="sc">$</span><span class="st">`</span><span class="at">Taxonomic lineage (Ids)</span><span class="st">`</span></span>
+<span id="cb7-32"><a href="#cb7-32" aria-hidden="true" tabindex="-1"></a>)</span></code></pre></div>
 </div>
 <div id="c.-mapping-des-protéines-vers-leur-cluster-uniref-2019-01" class="section level2">
 <h2>c. Mapping des protéines vers leur cluster UniRef (2019-01)</h2>
@@ -1316,8 +1335,14 @@ UniRef50/90/100.</p>
 lors du premier ID mapping sur le site d’UniProt (seulement 29).</p>
 <div class="sourceCode" id="cb11"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb11-1"><a href="#cb11-1" aria-hidden="true" tabindex="-1"></a><span class="co"># Liste des IDs à enlever.</span></span>
 <span id="cb11-2"><a href="#cb11-2" aria-hidden="true" tabindex="-1"></a>unique_interactors<span class="sc">$</span>From[<span class="fu">is.na</span>(unique_interactors<span class="sc">$</span>Organism)]</span>
-<span id="cb11-3"><a href="#cb11-3" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb11-4"><a href="#cb11-4" aria-hidden="true" tabindex="-1"></a>unique_interactors <span class="ot">&lt;-</span> unique_interactors[<span class="sc">!</span><span class="fu">is.na</span>(unique_interactors<span class="sc">$</span>Organism),]</span></code></pre></div>
+<span id="cb11-3"><a href="#cb11-3" aria-hidden="true" tabindex="-1"></a><span class="do">##  [1] &quot;F5GX77&quot;     &quot;A0A6B3T8I2&quot; &quot;A0A6B3T7M5&quot; &quot;A0A6B3T660&quot; &quot;A0A656FKU4&quot;</span></span>
+<span id="cb11-4"><a href="#cb11-4" aria-hidden="true" tabindex="-1"></a><span class="do">##  [6] &quot;A0A6B3T508&quot; &quot;D5VA98&quot;     &quot;A0A6B3T7I9&quot; &quot;A0A6B3SZJ3&quot; &quot;A0A380SAV9&quot;</span></span>
+<span id="cb11-5"><a href="#cb11-5" aria-hidden="true" tabindex="-1"></a><span class="do">## [11] &quot;A0A6B3T7P3&quot; &quot;A0A6B3T134&quot; &quot;A0A656FE37&quot; &quot;H0YJ75&quot;     &quot;A0A6B3T0M9&quot;</span></span>
+<span id="cb11-6"><a href="#cb11-6" aria-hidden="true" tabindex="-1"></a><span class="do">## [16] &quot;Q8N1N5&quot;     &quot;A0A6B3T1Q2&quot; &quot;D3QNI8&quot;     &quot;E7EQR4&quot;     &quot;H3BR70&quot;    </span></span>
+<span id="cb11-7"><a href="#cb11-7" aria-hidden="true" tabindex="-1"></a><span class="do">## [21] &quot;A0A6B3T643&quot; &quot;A0A6B3SX50&quot; &quot;A0A009G8Q6&quot; &quot;P0DN79&quot;     &quot;A0A656FBG2&quot;</span></span>
+<span id="cb11-8"><a href="#cb11-8" aria-hidden="true" tabindex="-1"></a><span class="do">## [26] &quot;A0A6B3T2G6&quot; &quot;A0A6B3T871&quot; &quot;Q6IE36&quot;     &quot;A0A6B3T3U5&quot;</span></span>
+<span id="cb11-9"><a href="#cb11-9" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb11-10"><a href="#cb11-10" aria-hidden="true" tabindex="-1"></a>unique_interactors <span class="ot">&lt;-</span> unique_interactors[<span class="sc">!</span><span class="fu">is.na</span>(unique_interactors<span class="sc">$</span>Organism),]</span></code></pre></div>
 <p>________</p>
 <p>Pour la suite on utilise Entry plutôt que From, car les UniProt IDs
 de Entry sont ceux à jour.</p>
@@ -1434,21 +1459,34 @@ bactérie-humain ou humain-fungi.</p>
 <span id="cb15-29"><a href="#cb15-29" aria-hidden="true" tabindex="-1"></a>)</span>
 <span id="cb15-30"><a href="#cb15-30" aria-hidden="true" tabindex="-1"></a></span>
 <span id="cb15-31"><a href="#cb15-31" aria-hidden="true" tabindex="-1"></a><span class="fu">table</span>(zhou_ppi<span class="sc">$</span>ppi_taxons)</span>
-<span id="cb15-32"><a href="#cb15-32" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb15-33"><a href="#cb15-33" aria-hidden="true" tabindex="-1"></a>coupled_columns <span class="ot">&lt;-</span> <span class="fu">list</span>(</span>
-<span id="cb15-34"><a href="#cb15-34" aria-hidden="true" tabindex="-1"></a>  <span class="fu">c</span>(<span class="st">&quot;interactor_1&quot;</span>, <span class="st">&quot;interactor_2&quot;</span>),</span>
-<span id="cb15-35"><a href="#cb15-35" aria-hidden="true" tabindex="-1"></a>  <span class="fu">c</span>(<span class="st">&quot;taxon_1&quot;</span>, <span class="st">&quot;taxon_2&quot;</span>),</span>
-<span id="cb15-36"><a href="#cb15-36" aria-hidden="true" tabindex="-1"></a>  <span class="fu">c</span>(<span class="st">&quot;cluster_1&quot;</span>, <span class="st">&quot;cluster_2&quot;</span>)</span>
-<span id="cb15-37"><a href="#cb15-37" aria-hidden="true" tabindex="-1"></a>)</span>
-<span id="cb15-38"><a href="#cb15-38" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb15-39"><a href="#cb15-39" aria-hidden="true" tabindex="-1"></a>skin_ppi <span class="ot">&lt;-</span> zhou_ppi <span class="sc">%&gt;%</span> </span>
-<span id="cb15-40"><a href="#cb15-40" aria-hidden="true" tabindex="-1"></a>  <span class="fu">filter</span>(<span class="sc">!</span><span class="fu">is.na</span>(cluster_1) <span class="sc">&amp;</span> <span class="sc">!</span><span class="fu">is.na</span>(cluster_2)) <span class="sc">%&gt;%</span></span>
-<span id="cb15-41"><a href="#cb15-41" aria-hidden="true" tabindex="-1"></a>  <span class="fu">mutate</span>(<span class="at">to_switch =</span> <span class="fu">if_else</span>(taxon_1<span class="sc">!=</span><span class="st">&#39;human&#39;</span>, <span class="cn">TRUE</span>, <span class="cn">FALSE</span>))</span>
-<span id="cb15-42"><a href="#cb15-42" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb15-43"><a href="#cb15-43" aria-hidden="true" tabindex="-1"></a><span class="cf">for</span> (columns <span class="cf">in</span> coupled_columns) {</span>
-<span id="cb15-44"><a href="#cb15-44" aria-hidden="true" tabindex="-1"></a>  skin_ppi[<span class="fu">which</span>(skin_ppi<span class="sc">$</span>to_switch), columns] <span class="ot">&lt;-</span> </span>
-<span id="cb15-45"><a href="#cb15-45" aria-hidden="true" tabindex="-1"></a>    <span class="fu">rev</span>(skin_ppi[<span class="fu">which</span>(skin_ppi<span class="sc">$</span>to_switch), columns])</span>
-<span id="cb15-46"><a href="#cb15-46" aria-hidden="true" tabindex="-1"></a>}</span></code></pre></div>
+<span id="cb15-32"><a href="#cb15-32" aria-hidden="true" tabindex="-1"></a><span class="do">## </span></span>
+<span id="cb15-33"><a href="#cb15-33" aria-hidden="true" tabindex="-1"></a><span class="do">##     archaea,human    bacteria,human  bacteria,metazoa       bacteria,NA </span></span>
+<span id="cb15-34"><a href="#cb15-34" aria-hidden="true" tabindex="-1"></a><span class="do">##                 1              6081               111                 8 </span></span>
+<span id="cb15-35"><a href="#cb15-35" aria-hidden="true" tabindex="-1"></a><span class="do">##   eukaryota,human eukaryota,metazoa       fungi,human     fungi,metazoa </span></span>
+<span id="cb15-36"><a href="#cb15-36" aria-hidden="true" tabindex="-1"></a><span class="do">##                 3                 1                99                 2 </span></span>
+<span id="cb15-37"><a href="#cb15-37" aria-hidden="true" tabindex="-1"></a><span class="do">##    human,bacteria   human,eukaryota       human,fungi     human,metazoa </span></span>
+<span id="cb15-38"><a href="#cb15-38" aria-hidden="true" tabindex="-1"></a><span class="do">##              5155                12                39                11 </span></span>
+<span id="cb15-39"><a href="#cb15-39" aria-hidden="true" tabindex="-1"></a><span class="do">##          human,NA       human,virus  metazoa,bacteria     metazoa,fungi </span></span>
+<span id="cb15-40"><a href="#cb15-40" aria-hidden="true" tabindex="-1"></a><span class="do">##                35              1851                88                 2 </span></span>
+<span id="cb15-41"><a href="#cb15-41" aria-hidden="true" tabindex="-1"></a><span class="do">##     metazoa,human     metazoa,virus       NA,bacteria          NA,human </span></span>
+<span id="cb15-42"><a href="#cb15-42" aria-hidden="true" tabindex="-1"></a><span class="do">##                 3                 8                 6                39 </span></span>
+<span id="cb15-43"><a href="#cb15-43" aria-hidden="true" tabindex="-1"></a><span class="do">##          NA,virus       virus,human     virus,metazoa          virus,NA </span></span>
+<span id="cb15-44"><a href="#cb15-44" aria-hidden="true" tabindex="-1"></a><span class="do">##                 2              1685                 8                 2</span></span>
+<span id="cb15-45"><a href="#cb15-45" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb15-46"><a href="#cb15-46" aria-hidden="true" tabindex="-1"></a>coupled_columns <span class="ot">&lt;-</span> <span class="fu">list</span>(</span>
+<span id="cb15-47"><a href="#cb15-47" aria-hidden="true" tabindex="-1"></a>  <span class="fu">c</span>(<span class="st">&quot;interactor_1&quot;</span>, <span class="st">&quot;interactor_2&quot;</span>),</span>
+<span id="cb15-48"><a href="#cb15-48" aria-hidden="true" tabindex="-1"></a>  <span class="fu">c</span>(<span class="st">&quot;taxon_1&quot;</span>, <span class="st">&quot;taxon_2&quot;</span>),</span>
+<span id="cb15-49"><a href="#cb15-49" aria-hidden="true" tabindex="-1"></a>  <span class="fu">c</span>(<span class="st">&quot;cluster_1&quot;</span>, <span class="st">&quot;cluster_2&quot;</span>)</span>
+<span id="cb15-50"><a href="#cb15-50" aria-hidden="true" tabindex="-1"></a>)</span>
+<span id="cb15-51"><a href="#cb15-51" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb15-52"><a href="#cb15-52" aria-hidden="true" tabindex="-1"></a>skin_ppi <span class="ot">&lt;-</span> zhou_ppi <span class="sc">%&gt;%</span> </span>
+<span id="cb15-53"><a href="#cb15-53" aria-hidden="true" tabindex="-1"></a>  <span class="fu">filter</span>(<span class="sc">!</span><span class="fu">is.na</span>(cluster_1) <span class="sc">&amp;</span> <span class="sc">!</span><span class="fu">is.na</span>(cluster_2)) <span class="sc">%&gt;%</span></span>
+<span id="cb15-54"><a href="#cb15-54" aria-hidden="true" tabindex="-1"></a>  <span class="fu">mutate</span>(<span class="at">to_switch =</span> <span class="fu">if_else</span>(taxon_1<span class="sc">!=</span><span class="st">&#39;human&#39;</span>, <span class="cn">TRUE</span>, <span class="cn">FALSE</span>))</span>
+<span id="cb15-55"><a href="#cb15-55" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb15-56"><a href="#cb15-56" aria-hidden="true" tabindex="-1"></a><span class="cf">for</span> (columns <span class="cf">in</span> coupled_columns) {</span>
+<span id="cb15-57"><a href="#cb15-57" aria-hidden="true" tabindex="-1"></a>  skin_ppi[<span class="fu">which</span>(skin_ppi<span class="sc">$</span>to_switch), columns] <span class="ot">&lt;-</span> </span>
+<span id="cb15-58"><a href="#cb15-58" aria-hidden="true" tabindex="-1"></a>    <span class="fu">rev</span>(skin_ppi[<span class="fu">which</span>(skin_ppi<span class="sc">$</span>to_switch), columns])</span>
+<span id="cb15-59"><a href="#cb15-59" aria-hidden="true" tabindex="-1"></a>}</span></code></pre></div>
 <p><code>skin_ppi</code> contient les PPIs sur lesquelles un mapping est
 possible. On mappe sur les clusters.</p>
 </div>
@@ -1460,15 +1498,16 @@ possible. On mappe sur les clusters.</p>
 <p>Alban a donné <code>data/acne_all_genefamilies.tsv</code>, qui
 contient les abondances de protéines (clusters UniRef) pour les cohortes
 acné et sain issus de Barnard et al. (2016).</p>
-<div class="sourceCode" id="cb16"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb16-1"><a href="#cb16-1" aria-hidden="true" tabindex="-1"></a>barnard_genefamilies <span class="ot">&lt;-</span> <span class="fu">read_tsv</span>(<span class="st">&quot;data/acne_all_genefamilies.tsv&quot;</span>)</span>
-<span id="cb16-2"><a href="#cb16-2" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb16-3"><a href="#cb16-3" aria-hidden="true" tabindex="-1"></a>smaller_barnard <span class="ot">&lt;-</span> barnard_genefamilies[<span class="sc">!</span><span class="fu">grepl</span>(<span class="st">&quot;</span><span class="sc">\\</span><span class="st">|&quot;</span>, barnard_genefamilies<span class="sc">$</span><span class="st">`</span><span class="at"># Gene Family</span><span class="st">`</span>), ]</span>
-<span id="cb16-4"><a href="#cb16-4" aria-hidden="true" tabindex="-1"></a>smaller_barnard <span class="ot">&lt;-</span> smaller_barnard[<span class="sc">-</span><span class="dv">1</span>,] <span class="co"># enlever UNMAPPED</span></span>
-<span id="cb16-5"><a href="#cb16-5" aria-hidden="true" tabindex="-1"></a>smaller_barnard<span class="sc">$</span><span class="st">`</span><span class="at"># Gene Family</span><span class="st">`</span> <span class="ot">&lt;-</span> <span class="fu">substr</span>(</span>
-<span id="cb16-6"><a href="#cb16-6" aria-hidden="true" tabindex="-1"></a>  smaller_barnard<span class="sc">$</span><span class="st">`</span><span class="at"># Gene Family</span><span class="st">`</span>,</span>
-<span id="cb16-7"><a href="#cb16-7" aria-hidden="true" tabindex="-1"></a>  <span class="at">start =</span> <span class="dv">10</span>,</span>
-<span id="cb16-8"><a href="#cb16-8" aria-hidden="true" tabindex="-1"></a>  <span class="at">stop =</span> <span class="fu">nchar</span>(smaller_barnard<span class="sc">$</span><span class="st">`</span><span class="at"># Gene Family</span><span class="st">`</span>)</span>
-<span id="cb16-9"><a href="#cb16-9" aria-hidden="true" tabindex="-1"></a>) <span class="co"># enlever &quot;UniRef90_&quot;</span></span></code></pre></div>
+<div class="sourceCode" id="cb16"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb16-1"><a href="#cb16-1" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb16-2"><a href="#cb16-2" aria-hidden="true" tabindex="-1"></a>barnard_genefamilies <span class="ot">&lt;-</span> <span class="fu">read_tsv</span>(<span class="st">&quot;data/acne_all_genefamilies.tsv&quot;</span>)</span>
+<span id="cb16-3"><a href="#cb16-3" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb16-4"><a href="#cb16-4" aria-hidden="true" tabindex="-1"></a>smaller_barnard <span class="ot">&lt;-</span> barnard_genefamilies[<span class="sc">!</span><span class="fu">grepl</span>(<span class="st">&quot;</span><span class="sc">\\</span><span class="st">|&quot;</span>, barnard_genefamilies<span class="sc">$</span><span class="st">`</span><span class="at"># Gene Family</span><span class="st">`</span>), ]</span>
+<span id="cb16-5"><a href="#cb16-5" aria-hidden="true" tabindex="-1"></a>smaller_barnard <span class="ot">&lt;-</span> smaller_barnard[<span class="sc">-</span><span class="dv">1</span>,] <span class="co"># enlever UNMAPPED</span></span>
+<span id="cb16-6"><a href="#cb16-6" aria-hidden="true" tabindex="-1"></a>smaller_barnard<span class="sc">$</span><span class="st">`</span><span class="at"># Gene Family</span><span class="st">`</span> <span class="ot">&lt;-</span> <span class="fu">substr</span>(</span>
+<span id="cb16-7"><a href="#cb16-7" aria-hidden="true" tabindex="-1"></a>  smaller_barnard<span class="sc">$</span><span class="st">`</span><span class="at"># Gene Family</span><span class="st">`</span>,</span>
+<span id="cb16-8"><a href="#cb16-8" aria-hidden="true" tabindex="-1"></a>  <span class="at">start =</span> <span class="dv">10</span>,</span>
+<span id="cb16-9"><a href="#cb16-9" aria-hidden="true" tabindex="-1"></a>  <span class="at">stop =</span> <span class="fu">nchar</span>(smaller_barnard<span class="sc">$</span><span class="st">`</span><span class="at"># Gene Family</span><span class="st">`</span>)</span>
+<span id="cb16-10"><a href="#cb16-10" aria-hidden="true" tabindex="-1"></a>) <span class="co"># enlever &quot;UniRef90_&quot;</span></span></code></pre></div>
 <div class="sourceCode" id="cb17"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb17-1"><a href="#cb17-1" aria-hidden="true" tabindex="-1"></a>frac_size <span class="ot">&lt;-</span> <span class="dv">100000</span></span>
 <span id="cb17-2"><a href="#cb17-2" aria-hidden="true" tabindex="-1"></a>n_files <span class="ot">&lt;-</span> <span class="fu">nrow</span>(smaller_barnard) <span class="sc">%/%</span> frac_size <span class="sc">+</span> <span class="dv">1</span></span>
 <span id="cb17-3"><a href="#cb17-3" aria-hidden="true" tabindex="-1"></a></span>
@@ -1483,56 +1522,59 @@ acné et sain issus de Barnard et al. (2016).</p>
 <p>On mappe sur UniProt <strong>(UniProtKB_AC-ID → UniRef50)</strong>.
 Malheureusement, énormément d’IDs ne mappent pas. Il va peut-être
 falloir utiliser UniRef de 2019 pour être cohérent avec Humann3.</p>
-<div class="sourceCode" id="cb18"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb18-1"><a href="#cb18-1" aria-hidden="true" tabindex="-1"></a>barnard_uniref50_2023 <span class="ot">&lt;-</span> <span class="fu">rbind</span>(</span>
-<span id="cb18-2"><a href="#cb18-2" aria-hidden="true" tabindex="-1"></a>  <span class="fu">read_tsv</span>(<span class="st">&quot;data/barnard_ref50_2023_1.tsv&quot;</span>),</span>
-<span id="cb18-3"><a href="#cb18-3" aria-hidden="true" tabindex="-1"></a>  <span class="fu">read_tsv</span>(<span class="st">&quot;data/barnard_ref50_2023_2.tsv&quot;</span>),</span>
-<span id="cb18-4"><a href="#cb18-4" aria-hidden="true" tabindex="-1"></a>  <span class="fu">read_tsv</span>(<span class="st">&quot;data/barnard_ref50_2023_3.tsv&quot;</span>),</span>
-<span id="cb18-5"><a href="#cb18-5" aria-hidden="true" tabindex="-1"></a>  <span class="fu">read_tsv</span>(<span class="st">&quot;data/barnard_ref50_2023_4.tsv&quot;</span>),</span>
-<span id="cb18-6"><a href="#cb18-6" aria-hidden="true" tabindex="-1"></a>  <span class="fu">read_tsv</span>(<span class="st">&quot;data/barnard_ref50_2023_5.tsv&quot;</span>),</span>
-<span id="cb18-7"><a href="#cb18-7" aria-hidden="true" tabindex="-1"></a>  <span class="fu">read_tsv</span>(<span class="st">&quot;data/barnard_ref50_2023_6.tsv&quot;</span>)</span>
-<span id="cb18-8"><a href="#cb18-8" aria-hidden="true" tabindex="-1"></a>)</span>
-<span id="cb18-9"><a href="#cb18-9" aria-hidden="true" tabindex="-1"></a><span class="fu">colnames</span>(barnard_uniref50_2023) <span class="ot">&lt;-</span> <span class="fu">c</span>(<span class="st">&quot;# Gene Family&quot;</span>, <span class="st">&quot;Cluster ID&quot;</span>)</span>
-<span id="cb18-10"><a href="#cb18-10" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb18-11"><a href="#cb18-11" aria-hidden="true" tabindex="-1"></a><span class="fu">print</span>(</span>
-<span id="cb18-12"><a href="#cb18-12" aria-hidden="true" tabindex="-1"></a>  <span class="fu">paste</span>(</span>
-<span id="cb18-13"><a href="#cb18-13" aria-hidden="true" tabindex="-1"></a>    <span class="st">&quot;Pourcentage de mapping réussi:&quot;</span>,</span>
-<span id="cb18-14"><a href="#cb18-14" aria-hidden="true" tabindex="-1"></a>    <span class="dv">100</span> <span class="sc">*</span> <span class="fu">nrow</span>(barnard_uniref50_2023) <span class="sc">/</span> <span class="fu">nrow</span>(smaller_barnard)</span>
-<span id="cb18-15"><a href="#cb18-15" aria-hidden="true" tabindex="-1"></a>  )</span>
-<span id="cb18-16"><a href="#cb18-16" aria-hidden="true" tabindex="-1"></a>)</span></code></pre></div>
+<div class="sourceCode" id="cb18"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb18-1"><a href="#cb18-1" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb18-2"><a href="#cb18-2" aria-hidden="true" tabindex="-1"></a>barnard_uniref50_2023 <span class="ot">&lt;-</span> <span class="fu">rbind</span>(</span>
+<span id="cb18-3"><a href="#cb18-3" aria-hidden="true" tabindex="-1"></a>  <span class="fu">read_tsv</span>(<span class="st">&quot;data/barnard_ref50_2023_1.tsv&quot;</span>),</span>
+<span id="cb18-4"><a href="#cb18-4" aria-hidden="true" tabindex="-1"></a>  <span class="fu">read_tsv</span>(<span class="st">&quot;data/barnard_ref50_2023_2.tsv&quot;</span>),</span>
+<span id="cb18-5"><a href="#cb18-5" aria-hidden="true" tabindex="-1"></a>  <span class="fu">read_tsv</span>(<span class="st">&quot;data/barnard_ref50_2023_3.tsv&quot;</span>),</span>
+<span id="cb18-6"><a href="#cb18-6" aria-hidden="true" tabindex="-1"></a>  <span class="fu">read_tsv</span>(<span class="st">&quot;data/barnard_ref50_2023_4.tsv&quot;</span>),</span>
+<span id="cb18-7"><a href="#cb18-7" aria-hidden="true" tabindex="-1"></a>  <span class="fu">read_tsv</span>(<span class="st">&quot;data/barnard_ref50_2023_5.tsv&quot;</span>),</span>
+<span id="cb18-8"><a href="#cb18-8" aria-hidden="true" tabindex="-1"></a>  <span class="fu">read_tsv</span>(<span class="st">&quot;data/barnard_ref50_2023_6.tsv&quot;</span>)</span>
+<span id="cb18-9"><a href="#cb18-9" aria-hidden="true" tabindex="-1"></a>)</span>
+<span id="cb18-10"><a href="#cb18-10" aria-hidden="true" tabindex="-1"></a><span class="fu">colnames</span>(barnard_uniref50_2023) <span class="ot">&lt;-</span> <span class="fu">c</span>(<span class="st">&quot;# Gene Family&quot;</span>, <span class="st">&quot;Cluster ID&quot;</span>)</span>
+<span id="cb18-11"><a href="#cb18-11" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb18-12"><a href="#cb18-12" aria-hidden="true" tabindex="-1"></a><span class="fu">print</span>(</span>
+<span id="cb18-13"><a href="#cb18-13" aria-hidden="true" tabindex="-1"></a>  <span class="fu">paste</span>(</span>
+<span id="cb18-14"><a href="#cb18-14" aria-hidden="true" tabindex="-1"></a>    <span class="st">&quot;Pourcentage de mapping réussi:&quot;</span>,</span>
+<span id="cb18-15"><a href="#cb18-15" aria-hidden="true" tabindex="-1"></a>    <span class="dv">100</span> <span class="sc">*</span> <span class="fu">nrow</span>(barnard_uniref50_2023) <span class="sc">/</span> <span class="fu">nrow</span>(smaller_barnard)</span>
+<span id="cb18-16"><a href="#cb18-16" aria-hidden="true" tabindex="-1"></a>  )</span>
+<span id="cb18-17"><a href="#cb18-17" aria-hidden="true" tabindex="-1"></a>)</span></code></pre></div>
 <p>On veut ensuite calculer les “expositions” des protéines humaines en
 sommant les abondances des interacteurs bactériens de cette protéine, au
 sein du sample.</p>
-<div class="sourceCode" id="cb19"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb19-1"><a href="#cb19-1" aria-hidden="true" tabindex="-1"></a><span class="co"># skin_ppi</span></span>
-<span id="cb19-2"><a href="#cb19-2" aria-hidden="true" tabindex="-1"></a><span class="co"># barnard_uniref50_2023</span></span>
-<span id="cb19-3"><a href="#cb19-3" aria-hidden="true" tabindex="-1"></a><span class="co"># smaller_barnard</span></span>
-<span id="cb19-4"><a href="#cb19-4" aria-hidden="true" tabindex="-1"></a></span>
+<div class="sourceCode" id="cb19"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb19-1"><a href="#cb19-1" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb19-2"><a href="#cb19-2" aria-hidden="true" tabindex="-1"></a><span class="co"># skin_ppi</span></span>
+<span id="cb19-3"><a href="#cb19-3" aria-hidden="true" tabindex="-1"></a><span class="co"># barnard_uniref50_2023</span></span>
+<span id="cb19-4"><a href="#cb19-4" aria-hidden="true" tabindex="-1"></a><span class="co"># smaller_barnard</span></span>
 <span id="cb19-5"><a href="#cb19-5" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb19-6"><a href="#cb19-6" aria-hidden="true" tabindex="-1"></a>smaller_barnard <span class="ot">&lt;-</span> <span class="fu">left_join</span>(smaller_barnard, barnard_uniref50_2023, <span class="at">by =</span> <span class="st">&quot;# Gene Family&quot;</span>) <span class="sc">%&gt;%</span></span>
-<span id="cb19-7"><a href="#cb19-7" aria-hidden="true" tabindex="-1"></a>  <span class="fu">relocate</span>(<span class="st">&quot;# Gene Family&quot;</span>,<span class="st">&quot;Cluster ID&quot;</span>) <span class="sc">%&gt;%</span></span>
-<span id="cb19-8"><a href="#cb19-8" aria-hidden="true" tabindex="-1"></a>  <span class="fu">filter</span>(<span class="sc">!</span><span class="fu">is.na</span>(<span class="st">`</span><span class="at">Cluster ID</span><span class="st">`</span>))</span>
-<span id="cb19-9"><a href="#cb19-9" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb19-10"><a href="#cb19-10" aria-hidden="true" tabindex="-1"></a>human_prot_exposition <span class="ot">&lt;-</span> <span class="fu">data.frame</span>(</span>
-<span id="cb19-11"><a href="#cb19-11" aria-hidden="true" tabindex="-1"></a>  <span class="at">stringsAsFactors =</span> <span class="cn">FALSE</span>,</span>
-<span id="cb19-12"><a href="#cb19-12" aria-hidden="true" tabindex="-1"></a>  <span class="fu">matrix</span>(</span>
-<span id="cb19-13"><a href="#cb19-13" aria-hidden="true" tabindex="-1"></a>    <span class="at">ncol =</span> <span class="fu">length</span>(<span class="fu">colnames</span>(smaller_barnard)) <span class="sc">-</span> <span class="dv">1</span>,</span>
-<span id="cb19-14"><a href="#cb19-14" aria-hidden="true" tabindex="-1"></a>    <span class="at">nrow =</span> <span class="fu">length</span>(<span class="fu">unique</span>(skin_ppi<span class="sc">$</span>cluster_1))</span>
-<span id="cb19-15"><a href="#cb19-15" aria-hidden="true" tabindex="-1"></a>  )</span>
-<span id="cb19-16"><a href="#cb19-16" aria-hidden="true" tabindex="-1"></a>)</span>
-<span id="cb19-17"><a href="#cb19-17" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb19-18"><a href="#cb19-18" aria-hidden="true" tabindex="-1"></a><span class="fu">colnames</span>(human_prot_exposition) <span class="ot">&lt;-</span> <span class="fu">c</span>(<span class="st">&quot;uniref100&quot;</span>, <span class="fu">colnames</span>(smaller_barnard)[<span class="sc">-</span><span class="fu">c</span>(<span class="dv">1</span><span class="sc">:</span><span class="dv">2</span>)])</span>
-<span id="cb19-19"><a href="#cb19-19" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb19-20"><a href="#cb19-20" aria-hidden="true" tabindex="-1"></a>human_prot_exposition<span class="sc">$</span>uniref100 <span class="ot">&lt;-</span> <span class="fu">unique</span>(skin_ppi<span class="sc">$</span>cluster_1)</span>
-<span id="cb19-21"><a href="#cb19-21" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb19-22"><a href="#cb19-22" aria-hidden="true" tabindex="-1"></a><span class="co"># Vectoriser ces boucles si l&#39;execution est trop lente. Ok pour l&#39;instant.</span></span>
-<span id="cb19-23"><a href="#cb19-23" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb19-24"><a href="#cb19-24" aria-hidden="true" tabindex="-1"></a><span class="co"># for (sample in colnames(human_prot_exposition)[-1]) {</span></span>
-<span id="cb19-25"><a href="#cb19-25" aria-hidden="true" tabindex="-1"></a><span class="co">#   for (human_prot in human_prot_exposition$uniref100) {</span></span>
-<span id="cb19-26"><a href="#cb19-26" aria-hidden="true" tabindex="-1"></a><span class="co">#     abundances &lt;- smaller_barnard %&gt;%</span></span>
-<span id="cb19-27"><a href="#cb19-27" aria-hidden="true" tabindex="-1"></a><span class="co">#       filter(`Cluster ID` == human_prot) %&gt;%</span></span>
-<span id="cb19-28"><a href="#cb19-28" aria-hidden="true" tabindex="-1"></a><span class="co">#       pull(sample)</span></span>
-<span id="cb19-29"><a href="#cb19-29" aria-hidden="true" tabindex="-1"></a><span class="co">#     human_prot_exposition[human_prot_exposition$uniref100 == human_prot, sample] &lt;- sum(abundances)</span></span>
-<span id="cb19-30"><a href="#cb19-30" aria-hidden="true" tabindex="-1"></a><span class="co">#   }</span></span>
-<span id="cb19-31"><a href="#cb19-31" aria-hidden="true" tabindex="-1"></a><span class="co"># }</span></span></code></pre></div>
+<span id="cb19-6"><a href="#cb19-6" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb19-7"><a href="#cb19-7" aria-hidden="true" tabindex="-1"></a>smaller_barnard <span class="ot">&lt;-</span> <span class="fu">left_join</span>(smaller_barnard, barnard_uniref50_2023, <span class="at">by =</span> <span class="st">&quot;# Gene Family&quot;</span>) <span class="sc">%&gt;%</span></span>
+<span id="cb19-8"><a href="#cb19-8" aria-hidden="true" tabindex="-1"></a>  <span class="fu">relocate</span>(<span class="st">&quot;# Gene Family&quot;</span>,<span class="st">&quot;Cluster ID&quot;</span>) <span class="sc">%&gt;%</span></span>
+<span id="cb19-9"><a href="#cb19-9" aria-hidden="true" tabindex="-1"></a>  <span class="fu">filter</span>(<span class="sc">!</span><span class="fu">is.na</span>(<span class="st">`</span><span class="at">Cluster ID</span><span class="st">`</span>))</span>
+<span id="cb19-10"><a href="#cb19-10" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb19-11"><a href="#cb19-11" aria-hidden="true" tabindex="-1"></a>human_prot_exposition <span class="ot">&lt;-</span> <span class="fu">data.frame</span>(</span>
+<span id="cb19-12"><a href="#cb19-12" aria-hidden="true" tabindex="-1"></a>  <span class="at">stringsAsFactors =</span> <span class="cn">FALSE</span>,</span>
+<span id="cb19-13"><a href="#cb19-13" aria-hidden="true" tabindex="-1"></a>  <span class="fu">matrix</span>(</span>
+<span id="cb19-14"><a href="#cb19-14" aria-hidden="true" tabindex="-1"></a>    <span class="at">ncol =</span> <span class="fu">length</span>(<span class="fu">colnames</span>(smaller_barnard)) <span class="sc">-</span> <span class="dv">1</span>,</span>
+<span id="cb19-15"><a href="#cb19-15" aria-hidden="true" tabindex="-1"></a>    <span class="at">nrow =</span> <span class="fu">length</span>(<span class="fu">unique</span>(skin_ppi<span class="sc">$</span>cluster_1))</span>
+<span id="cb19-16"><a href="#cb19-16" aria-hidden="true" tabindex="-1"></a>  )</span>
+<span id="cb19-17"><a href="#cb19-17" aria-hidden="true" tabindex="-1"></a>)</span>
+<span id="cb19-18"><a href="#cb19-18" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb19-19"><a href="#cb19-19" aria-hidden="true" tabindex="-1"></a><span class="fu">colnames</span>(human_prot_exposition) <span class="ot">&lt;-</span> <span class="fu">c</span>(<span class="st">&quot;uniref100&quot;</span>, <span class="fu">colnames</span>(smaller_barnard)[<span class="sc">-</span><span class="fu">c</span>(<span class="dv">1</span><span class="sc">:</span><span class="dv">2</span>)])</span>
+<span id="cb19-20"><a href="#cb19-20" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb19-21"><a href="#cb19-21" aria-hidden="true" tabindex="-1"></a>human_prot_exposition<span class="sc">$</span>uniref100 <span class="ot">&lt;-</span> <span class="fu">unique</span>(skin_ppi<span class="sc">$</span>cluster_1)</span>
+<span id="cb19-22"><a href="#cb19-22" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb19-23"><a href="#cb19-23" aria-hidden="true" tabindex="-1"></a><span class="co"># Vectoriser ces boucles si l&#39;execution est trop lente. Ok pour l&#39;instant.</span></span>
+<span id="cb19-24"><a href="#cb19-24" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb19-25"><a href="#cb19-25" aria-hidden="true" tabindex="-1"></a><span class="co"># for (sample in colnames(human_prot_exposition)[-1]) {</span></span>
+<span id="cb19-26"><a href="#cb19-26" aria-hidden="true" tabindex="-1"></a><span class="co">#   for (human_prot in human_prot_exposition$uniref100) {</span></span>
+<span id="cb19-27"><a href="#cb19-27" aria-hidden="true" tabindex="-1"></a><span class="co">#     abundances &lt;- smaller_barnard %&gt;%</span></span>
+<span id="cb19-28"><a href="#cb19-28" aria-hidden="true" tabindex="-1"></a><span class="co">#       filter(`Cluster ID` == human_prot) %&gt;%</span></span>
+<span id="cb19-29"><a href="#cb19-29" aria-hidden="true" tabindex="-1"></a><span class="co">#       pull(sample)</span></span>
+<span id="cb19-30"><a href="#cb19-30" aria-hidden="true" tabindex="-1"></a><span class="co">#     human_prot_exposition[human_prot_exposition$uniref100 == human_prot, sample] &lt;- sum(abundances)</span></span>
+<span id="cb19-31"><a href="#cb19-31" aria-hidden="true" tabindex="-1"></a><span class="co">#   }</span></span>
+<span id="cb19-32"><a href="#cb19-32" aria-hidden="true" tabindex="-1"></a><span class="co"># }</span></span>
+<span id="cb19-33"><a href="#cb19-33" aria-hidden="true" tabindex="-1"></a>  </span></code></pre></div>
 <p>_____________________________________________________</p>
 </div>
 </div>

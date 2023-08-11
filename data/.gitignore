@@ -1,4 +1,8 @@
-idmapping_taxonomy.tsv
+# MacOS
+.DS_Store
+
+# Project large data files
+idmapping_interactors_taxo.tsv
 uniref50.xml
 uniref90.xml
 uniref100.xml

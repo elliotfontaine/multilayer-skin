@@ -27,7 +27,8 @@ Choisir le répertoire de travail. En plus de ce `.Rmd`, il doit contenir dans u
 -   `uniref50.xml`, `uniref90.xml`, `uniref100.xml` venant des archives d'UniProt (on veut se servir de la snapshot de janvier 2019 pour être cohérent avec HUMAnN3).
 
 ```{r workspace, eval=FALSE}
-setwd("/home/fonell01/github/multilayer-skin")
+#setwd("/home/fonell01/github/multilayer-skin")
+setwd("/Users/elliot/github/multilayer-skin")
 ```
 
 Les modules nécessaires sont les suivants:
@@ -47,9 +48,11 @@ library(myTAI)
 # source("rest_functions.R")
 ```
 
-# 1. Création de la base de données "HBNet"
+# 1. Création de la base de données "HBFNet"
 
 En suivant le protocole de [Zhou et al. (2022)](https://doi.org/10.1186/s13059-022-02643-9), nous voulons créer une base de données d'interactions PPIs humain - bactérie/fungus, où les identifiants ne sont pas des protéines mais des clusters d'homologie UniRef, afin de propager les PPIs aux protéines proches structurellement. Les informations de cette base de données sont ensuite utilisées pour traiter les données métagénomiques de cohortes sur l'acné (ou d'autres maladies cutanées).
+
+Zhou et al. appelaient leur réseau "HBNet", probablement pour "Human-Bacteria Network". Nous appelons le notre HBFNet pour "Human-Bacteria Human-Fungus Network".
 
 !["**An outline of our homology mapping procedure and alignment.** Depiction of the interaction network inference and protein detection pipeline for bacterial/microbiome (blue)-human (orange) PPIs."](protocole_zhou22.png)
 
@@ -94,7 +97,7 @@ writeLines(unique_interactors$From, "data/unique_interactors.txt")
 Sur l'outil **ID mapping** d'UniProt on fait UniProtKB AC/ID -\> UniProtKB. On exporte ensuite sous format tabulé, avec les colonnes suivantes:
 
 ```{r exported_mapping}
-unique_interactors <- read_tsv("data/idmapping_taxonomy.tsv")
+unique_interactors <- read_tsv("data/idmapping_interactors_taxo.tsv")
 
 length(unique_interactors$From) # Devrait être la même que précédemment
 unique_interactors[1:3,]
@@ -104,8 +107,9 @@ On peut déjà remarquer que certaines espèces sont sur-représentées dans les
 
 ```{r top_species_plot, echo=FALSE}
 
-biggest_10_species <- data.frame(sort(table(unique_interactors$Organism), decreasing = TRUE)[1:10]) %>%
+biggest_10_species <- data.frame(sort(table(hbf_homogen_clusters$Organism), decreasing = TRUE)[1:10]) %>%
   setNames(c("Species", "Occurences"))
+  
 
 ggplot(biggest_10_species, aes(x=Species, y=Occurences)) +
   geom_segment( aes(x=Species, xend=Species, y=0, yend=Occurences), color="skyblue") +
@@ -272,6 +276,7 @@ rm "temp_$output_file"
 On importe notre liste d'interacteurs uniques, mappés sur UniRef50/90/100, dans l'environnement R.
 
 ```{r}
+## Pour ajouter les noms aux colonnes lors de la fusion. uniref_db = "UniRef50" ou 90 ou 100
 make_colnames <- function(uniref_db) {
   columns = c(
     "From",
@@ -291,7 +296,7 @@ mapped_interactors_uniref <- merge(
   by = "From"
 )
 
-# Statistiques
+## Statistiques
 paste(
   nrow(mapped_interactors_uniref), # Nombre de matches avec les bases UniRef
   round(
@@ -302,7 +307,7 @@ paste(
 
 mapped_interactors_uniref[1:3,]
 
-# On ajoute les résultats de ce mapping au dataframe principal
+## On ajoute les résultats de ce mapping au dataframe principal
 unique_interactors <- merge(
   unique_interactors,
   mapped_interactors_uniref,
@@ -311,7 +316,7 @@ unique_interactors <- merge(
 )
 ```
 
-## d. Filtres pour ne garder que les interacteurs d'intérêt 
+## d. Filtres pour ne garder que les interacteurs d'intérêt
 
 On veut maintenant filtrer sur la taxonomie. Tout d'abord, filtrons pour ne garder que les interacteurs humains, bactériens et fongiques.
 
@@ -322,11 +327,11 @@ hbf_interactors <- unique_interactors %>%
 nrow(hbf_interactors)
 ```
 
-On filtre pour ne garder que les clusters 100% humains, 100% bactériens et 100% fongiques.
+On veut filtrer pour ne garder que les clusters 100% humains, 100% bactériens et 100% fongiques.
 
-On peut profiter du fait qu'on sait déjà que le cluster contient une protéine du taxon d'intérêt. Un exemple: dans le pire des cas pour un interacteur de bactérie, le LCA pourra être "root" ou "cellular organisms" s'il n'y a pas que des bactéries dans le cluster.
+On peut profiter du fait qu'on sait déjà que le cluster contient une protéine du taxon d'intérêt. Un exemple: dans le pire des cas pour un interacteur de bactérie, le LCA du cluster pourra être "root" ou "cellular organisms" s'il n'y a pas que des bactéries dans le cluster.
 
-Pour les larges taxons *bacteria* et *fungi*, on exclue donc le cluster si le LCA est au dessus du taxons (la liste de parents est courte heureusement). Pour les clusters *human*, on a juste à vérifier que le LCA est 9606.
+Pour les larges taxons *bacteria* et *fungi*, on exclue donc le cluster si le LCA est au dessus du taxon (la liste de parents est courte heureusement). Pour les clusters *human*, on a juste à vérifier que le LCA est 9606.
 
 ```{r keep_only_homogen}
 # lca_to_remove_bacteria <- c("root", "cellular organisms")
@@ -338,7 +343,279 @@ hbf_homogen_clusters <- hbf_interactors %>%
   filter(taxon != "human" | Taxo_LCA_UniRef90 == "9606" | Taxo_LCA_UniRef100 == "9606") %>%
   filter(!(taxon == "bacteria" & Taxo_LCA_UniRef50 %in% lca_to_remove_bacteria)) %>%
   filter(!(taxon == "fungi" & Taxo_LCA_UniRef50 %in% lca_to_remove_fungi))
+
+## Statistiques
+paste(
+  nrow(hbf_homogen_clusters), # Nombre de matches avec les bases UniRef
+  round(
+    nrow(hbf_homogen_clusters) / nrow(unique_interactors),
+    digits = 2
+  ) # Fraction mappée
+)
+table(hbf_homogen_clusters$taxon)
 ```
+
+On n'a plus que la moitié des interacteurs de départ. Néanmoins, on a maintenant des clusters, on couvre donc une partie plus importante du métaprotéome.
+
+On peut également regarder quelle quantité de PPIs restent. On filtre `zhou_ppi` pour ne garder que celles dont les 2 interacteurs sont dans `hbf_homogen_clusters`.
+
+```{r make_hbfnet}
+
+## On reprend les 15,252 PPIs inter-spécifiques du tout début, pour ne garder que celles dont les interacteurs ont passé les filtres précédents.
+HBFNet <- zhou_ppi %>%
+  filter(interactor_1 %in% hbf_homogen_clusters$From &
+           interactor_2 %in% hbf_homogen_clusters$From)
+
+HBFNet$taxon_1 <- sapply(
+  HBFNet$interactor_1,
+  function(x) {
+    with(hbf_homogen_clusters, taxon[Entry==x])
+  }
+)
+
+HBFNet$taxon_2 <- sapply(
+  HBFNet$interactor_2,
+  function(x) {
+    with(hbf_homogen_clusters, taxon[Entry==x])
+  }
+)
+
+## Cette partie intervertit les interacteurs pour avoir l'humain dans la colonne 2
+HBFNet <- HBFNet %>% 
+  mutate(to_switch = if_else(taxon_1=='human', TRUE, FALSE))
+
+coupled_columns <- list(
+  c("interactor_1", "interactor_2"),
+  c("taxon_1", "taxon_2")
+)
+for (columns in coupled_columns) {
+  HBFNet[which(HBFNet$to_switch), columns] <- 
+    rev(HBFNet[which(HBFNet$to_switch), columns])
+}
+
+HBFNet$to_switch <- NULL
+
+## On ajoute le cluster d'intérêt (UniRef100 pour l'humain, UniRef50 pour le microbiote)
+HBFNet$cluster_1 <- sapply(
+  HBFNet$interactor_1,
+  function(x) {
+    with(hbf_homogen_clusters, Cluster_UniRef50[Entry==x])
+  }
+)
+
+HBFNet$cluster_2 <- sapply(
+  HBFNet$interactor_2,
+  function(x) {
+    with(hbf_homogen_clusters, Cluster_UniRef100[Entry==x])
+  }
+)
+
+table(paste(HBFNet$taxon_1, HBFNet$taxon_2, sep=","))
+
+```
+
+```{r HBFNet_graph}
+
+# Start with two data.frames: one for node positions,
+# and one for edges you want to draw between nodes.
+u_micro <- unique(HBFNet$interactor_1)
+u_human <- unique(HBFNet$interactor_2)
+
+pos_dat <- data.frame(
+  node_id = c(u_micro, u_human),
+  type = c(rep("microbiote", length(u_micro)), rep("humain", length(u_human))),
+  xpos = c(rep(1, length(u_micro)), rep(2, length(u_human))),
+  ypos = c(
+    seq(1, length(u_human), length.out=length(u_micro)),
+    seq(1, length(u_human))
+  )
+)
+
+edge_dat <- data.frame(
+  start=HBFNet$interactor_1,
+  end=HBFNet$interactor_2
+)
+
+# Use two successive merges to join node x,y positions
+# for each edge you want to draw.
+tmp_dat = merge(edge_dat, pos_dat, by.x="start", by.y="node_id")
+seg_dat = merge(tmp_dat, pos_dat, by.x="end", by.y="node_id")
+
+# Remove unneeded columns and change column names for convenience.
+seg_dat$type.x = NULL
+seg_dat$type.y = NULL
+names(seg_dat) = c("end", "start", "x", "Nombre de clusters", "xend", "yend")
+
+# Finally, draw the plot.
+library(ggplot2)
+
+p <- ggplot() +
+  geom_segment(data=seg_dat, aes(x=x, y=`Nombre de clusters`, xend=xend, yend=yend),
+               colour="grey50", size=0.03) +
+  geom_point(data=pos_dat, aes(x=xpos, y=ypos, colour=type), size=0.5) +
+  #geom_text(data=pos_dat, aes(x=xpos, y=ypos, label=node_id)) +
+  scale_colour_manual(values=c(microbiote="steelblue", humain="darkorange")) +
+  ggtitle("Interactions Protéine-Protéine entre clusters homogènes\nbactériens/fongiques et humains") +
+  theme(panel.background = element_blank(),
+        panel.grid.major = element_blank(),
+        panel.grid.minor = element_blank(),
+        axis.title.x=element_blank(),
+        axis.text.x=element_blank(),
+        axis.ticks.x=element_blank())
+plot(p)
+ggsave("plot.png", plot=p, height=4, width=6, dpi=150)
+```
+
+```{r env_cleanup, include=FALSE}
+remove(zhou_ppi, unique_interactors,
+       lca_to_remove_bacteria, lca_to_remove_fungi,
+       columns, coupled_columns,
+       edge_dat, pos_dat, seg_dat, tmp_dat,
+       u_human, u_micro)
+
+```
+
+# 2. Données métagénomiques sur l'acné
+
+## a. Données métagénomiques
+
+Alban a donné `data/acne_all_genefamilies.tsv`, qui contient les abondances de protéines (clusters UniRef) pour les cohortes acné et sain issus de Barnard et al. (2016).
+
+```{r barnard_genefamilies}
+
+barnard_genefamilies <- read_tsv("data/acne_all_genefamilies.tsv")
+
+smaller_barnard <- barnard_genefamilies[!grepl("\\|", barnard_genefamilies$`# Gene Family`), ]
+# smaller_barnard <- smaller_barnard[-1,] # enlever UNMAPPED
+# smaller_barnard$`# Gene Family` <- substr(
+#   smaller_barnard$`# Gene Family`,
+#   start = 10,
+#   stop = nchar(smaller_barnard$`# Gene Family`)
+# ) # enlever "UniRef90_"
+
+remove(barnard_genefamilies)
+```
+
+```{r}
+frac_size <- 100000
+n_files <- nrow(smaller_barnard) %/% frac_size + 1
+
+for (i in 1:n_files) {
+  low_bound <- (i - 1) * frac_size + 1
+  up_bound <- min(i*frac_size, nrow(smaller_barnard))
+  frac_barnard <- smaller_barnard$`# Gene Family`[low_bound:up_bound]
+  writeLines(frac_barnard, paste0("data/barnard_ref90_2019_", i, ".txt"))
+}
+
+rm(frac_size, n_files)
+```
+
+On mappe sur UniProt **(UniProtKB_AC-ID → UniRef50)**. Malheureusement, énormément d'IDs ne mappent pas. Il va peut-être falloir utiliser UniRef de 2019 pour être cohérent avec Humann3.
+
+```{r barnard_uniref50_mapped, eval=FALSE}
+
+barnard_uniref50_2023 <- rbind(
+  read_tsv("data/barnard_ref50_2023_1.tsv"),
+  read_tsv("data/barnard_ref50_2023_2.tsv"),
+  read_tsv("data/barnard_ref50_2023_3.tsv"),
+  read_tsv("data/barnard_ref50_2023_4.tsv"),
+  read_tsv("data/barnard_ref50_2023_5.tsv"),
+  read_tsv("data/barnard_ref50_2023_6.tsv")
+)
+colnames(barnard_uniref50_2023) <- c("# Gene Family", "Cluster ID")
+
+print(
+  paste(
+    "Pourcentage de mapping réussi:",
+    100 * nrow(barnard_uniref50_2023) / nrow(smaller_barnard)
+  )
+)
+```
+
+On veut ensuite calculer les "expositions" des protéines humaines en sommant les abondances des interacteurs bactériens de cette protéine, au sein du sample.
+
+```{r human_prots_exposition, eval=FALSE}
+
+# skin_ppi
+# barnard_uniref50_2023
+# smaller_barnard
+
+
+smaller_barnard <- left_join(smaller_barnard, barnard_uniref50_2023, by = "# Gene Family") %>%
+  relocate("# Gene Family","Cluster ID") %>%
+  filter(!is.na(`Cluster ID`))
+
+human_prot_exposition <- data.frame(
+  stringsAsFactors = FALSE,
+  matrix(
+    ncol = length(colnames(smaller_barnard)) - 1,
+    nrow = length(unique(skin_ppi$cluster_1))
+  )
+)
+
+colnames(human_prot_exposition) <- c("uniref100", colnames(smaller_barnard)[-c(1:2)])
+
+human_prot_exposition$uniref100 <- unique(skin_ppi$cluster_1)
+
+# Vectoriser ces boucles si l'execution est trop lente. Ok pour l'instant.
+
+# for (sample in colnames(human_prot_exposition)[-1]) {
+#   for (human_prot in human_prot_exposition$uniref100) {
+#     abundances <- smaller_barnard %>%
+#       filter(`Cluster ID` == human_prot) %>%
+#       pull(sample)
+#     human_prot_exposition[human_prot_exposition$uniref100 == human_prot, sample] <- sum(abundances)
+#   }
+# }
+  
+```
+
+\_\_\_\_\_\_\_\_\_\_\_\_\_\_\_\_\_\_\_\_\_\_\_\_\_\_\_\_\_\_\_\_\_\_\_\_\_\_\_\_\_\_\_\_\_\_\_\_\_\_\_\_\_
+
+# [OLD]1. Building a putative bacteria‑human protein‑protein interaction (PPI) network
+
+Il n'y a presque aucun PPI humain-bactérie dans biogrid
+
+```{r biogrid_human, eval=FALSE}
+biogrid <- read_tsv("data/BIOGRID-ALL-4.4.221.tab3.txt") %>%
+  dplyr::select(
+    "SWISS-PROT Accessions Interactor A",
+    "SWISS-PROT Accessions Interactor B",
+    "Organism Name Interactor A",
+    "Organism Name Interactor B"
+  ) %>%
+  set_names("A", "B", "Species_A", "Species_B") %>%
+  filter(
+    (Species_A == "Homo sapiens" & Species_B != "Homo sapiens") |
+    (Species_B == "Homo sapiens" & Species_A != "Homo sapiens")
+  ) %>%
+  filter(A != "-") %>%
+  filter(B != "-") %>%
+  filter(Species_B != "Mus musculus") %>%
+  filter(Species_B != "Rattus norvegicus") %>% 
+  filter(Species_B != "Saccharomyces cerevisiae (S288c)")
+```
+
+HPIDB
+
+```{r hpidb, eval=FALSE}
+hpidb <- read_tsv("data/hpidb_human_list.mitab_plus.txt")
+interaction_type <- as.data.frame(table(hpidb$interaction_type))
+detection_method <- as.data.frame(table(hpidb$detection_method))
+```
+
+Interactions were downloaded from the IntAct database, HPIdb 3.0, and BioGRID [June 2021] and supplemented with additional host-microbe interaction studies, whose interactions were added manually. Only interactions with evidence codes that indicated binary, experimental determination of the interaction between UniProt identifiers with non-matching taxa were preserved, thereby excluding co-complex associations, small molecule interactions, and predicted interactions.
+
+Uniref100/90 clusters containing human proteins and Uniref50 cluster containing bacterial proteins were downloaded from UniProt [June 2021], to which interspecies protein interactors were mapped [89]. PPIs comprising one Uniref100/90 cluster containing human proteins and one Uniref50 cluster containing bacterial proteins were retained for downstream analyses.
+
+Within each UniRef50 bacterial cluster, we further filtered the sequences such that only bacterial members of the cluster within 70% sequence similarity to the experimentally verified protein were labeled as putative interactors. Sequence similarity was calculated using a Smith-Waterman local alignment with the BLOSUM62 matrix via python's parasail [90] library (v.1.1.17) and tallying the number of matches in the pairwise alignment that represent frequent substitutions (non-negative BLOSUM62 scores), divided by the length of the experimentally verified interactor.
+
+-   Formater en MITAB <https://psicquic.github.io/MITAB28Format.html>
+-   Filtrer binaire
+-   Filtrer experimental
+-   Filtrer MIScore
+-   Récuperer les IDs uniprots dans la colonne **protein_xref\_`1/2`\_unique**. Il est possible d'aller en chercher dans d'autres colonnes (alternative_identifiers) mais besoin de regex etc, pour l'instant faisons simple.
+-   Mapper les IDs uniprots à uniref via le package `UniProt.ws`. Pour savoir si bactérie ou champignon, voir colonne `protein_taxid_2_cat`.
 
 \_\_\_\_\_\_\_\_
 
@@ -472,146 +749,6 @@ for (columns in coupled_columns) {
 ```
 
 `skin_ppi` contient les PPIs sur lesquelles un mapping est possible. On mappe sur les clusters.
-
-# 2. Données métagénomiques sur l'acné
-
-## a. Données métagénomiques
-
-Alban a donné `data/acne_all_genefamilies.tsv`, qui contient les abondances de protéines (clusters UniRef) pour les cohortes acné et sain issus de Barnard et al. (2016).
-
-```{r barnard_genefamilies}
-
-barnard_genefamilies <- read_tsv("data/acne_all_genefamilies.tsv")
-
-smaller_barnard <- barnard_genefamilies[!grepl("\\|", barnard_genefamilies$`# Gene Family`), ]
-smaller_barnard <- smaller_barnard[-1,] # enlever UNMAPPED
-smaller_barnard$`# Gene Family` <- substr(
-  smaller_barnard$`# Gene Family`,
-  start = 10,
-  stop = nchar(smaller_barnard$`# Gene Family`)
-) # enlever "UniRef90_"
-```
-
-```{r}
-frac_size <- 100000
-n_files <- nrow(smaller_barnard) %/% frac_size + 1
-
-for (i in 1:n_files) {
-  low_bound <- (i - 1) * frac_size + 1
-  up_bound <- min(i*frac_size, nrow(smaller_barnard))
-  frac_barnard <- smaller_barnard$`# Gene Family`[low_bound:up_bound]
-  writeLines(frac_barnard, paste0("data/barnard_ref90_2019_", i, ".txt"))
-}
-
-rm(frac_size, n_files)
-```
-
-On mappe sur UniProt **(UniProtKB_AC-ID → UniRef50)**. Malheureusement, énormément d'IDs ne mappent pas. Il va peut-être falloir utiliser UniRef de 2019 pour être cohérent avec Humann3.
-
-```{r barnard_uniref50_mapped, eval=FALSE}
-
-barnard_uniref50_2023 <- rbind(
-  read_tsv("data/barnard_ref50_2023_1.tsv"),
-  read_tsv("data/barnard_ref50_2023_2.tsv"),
-  read_tsv("data/barnard_ref50_2023_3.tsv"),
-  read_tsv("data/barnard_ref50_2023_4.tsv"),
-  read_tsv("data/barnard_ref50_2023_5.tsv"),
-  read_tsv("data/barnard_ref50_2023_6.tsv")
-)
-colnames(barnard_uniref50_2023) <- c("# Gene Family", "Cluster ID")
-
-print(
-  paste(
-    "Pourcentage de mapping réussi:",
-    100 * nrow(barnard_uniref50_2023) / nrow(smaller_barnard)
-  )
-)
-```
-
-On veut ensuite calculer les "expositions" des protéines humaines en sommant les abondances des interacteurs bactériens de cette protéine, au sein du sample.
-
-```{r human_prots_exposition, eval=FALSE}
-
-# skin_ppi
-# barnard_uniref50_2023
-# smaller_barnard
-
-
-smaller_barnard <- left_join(smaller_barnard, barnard_uniref50_2023, by = "# Gene Family") %>%
-  relocate("# Gene Family","Cluster ID") %>%
-  filter(!is.na(`Cluster ID`))
-
-human_prot_exposition <- data.frame(
-  stringsAsFactors = FALSE,
-  matrix(
-    ncol = length(colnames(smaller_barnard)) - 1,
-    nrow = length(unique(skin_ppi$cluster_1))
-  )
-)
-
-colnames(human_prot_exposition) <- c("uniref100", colnames(smaller_barnard)[-c(1:2)])
-
-human_prot_exposition$uniref100 <- unique(skin_ppi$cluster_1)
-
-# Vectoriser ces boucles si l'execution est trop lente. Ok pour l'instant.
-
-# for (sample in colnames(human_prot_exposition)[-1]) {
-#   for (human_prot in human_prot_exposition$uniref100) {
-#     abundances <- smaller_barnard %>%
-#       filter(`Cluster ID` == human_prot) %>%
-#       pull(sample)
-#     human_prot_exposition[human_prot_exposition$uniref100 == human_prot, sample] <- sum(abundances)
-#   }
-# }
-  
-```
-
-\_\_\_\_\_\_\_\_\_\_\_\_\_\_\_\_\_\_\_\_\_\_\_\_\_\_\_\_\_\_\_\_\_\_\_\_\_\_\_\_\_\_\_\_\_\_\_\_\_\_\_\_\_
-
-# [OLD]1. Building a putative bacteria‑human protein‑protein interaction (PPI) network
-
-Il n'y a presque aucun PPI humain-bactérie dans biogrid
-
-```{r biogrid_human, eval=FALSE}
-biogrid <- read_tsv("data/BIOGRID-ALL-4.4.221.tab3.txt") %>%
-  dplyr::select(
-    "SWISS-PROT Accessions Interactor A",
-    "SWISS-PROT Accessions Interactor B",
-    "Organism Name Interactor A",
-    "Organism Name Interactor B"
-  ) %>%
-  set_names("A", "B", "Species_A", "Species_B") %>%
-  filter(
-    (Species_A == "Homo sapiens" & Species_B != "Homo sapiens") |
-    (Species_B == "Homo sapiens" & Species_A != "Homo sapiens")
-  ) %>%
-  filter(A != "-") %>%
-  filter(B != "-") %>%
-  filter(Species_B != "Mus musculus") %>%
-  filter(Species_B != "Rattus norvegicus") %>% 
-  filter(Species_B != "Saccharomyces cerevisiae (S288c)")
-```
-
-HPIDB
-
-```{r hpidb, eval=FALSE}
-hpidb <- read_tsv("data/hpidb_human_list.mitab_plus.txt")
-interaction_type <- as.data.frame(table(hpidb$interaction_type))
-detection_method <- as.data.frame(table(hpidb$detection_method))
-```
-
-Interactions were downloaded from the IntAct database, HPIdb 3.0, and BioGRID [June 2021] and supplemented with additional host-microbe interaction studies, whose interactions were added manually. Only interactions with evidence codes that indicated binary, experimental determination of the interaction between UniProt identifiers with non-matching taxa were preserved, thereby excluding co-complex associations, small molecule interactions, and predicted interactions.
-
-Uniref100/90 clusters containing human proteins and Uniref50 cluster containing bacterial proteins were downloaded from UniProt [June 2021], to which interspecies protein interactors were mapped [89]. PPIs comprising one Uniref100/90 cluster containing human proteins and one Uniref50 cluster containing bacterial proteins were retained for downstream analyses.
-
-Within each UniRef50 bacterial cluster, we further filtered the sequences such that only bacterial members of the cluster within 70% sequence similarity to the experimentally verified protein were labeled as putative interactors. Sequence similarity was calculated using a Smith-Waterman local alignment with the BLOSUM62 matrix via python's parasail [90] library (v.1.1.17) and tallying the number of matches in the pairwise alignment that represent frequent substitutions (non-negative BLOSUM62 scores), divided by the length of the experimentally verified interactor.
-
--   Formater en MITAB <https://psicquic.github.io/MITAB28Format.html>
--   Filtrer binaire
--   Filtrer experimental
--   Filtrer MIScore
--   Récuperer les IDs uniprots dans la colonne **protein_xref\_`1/2`\_unique**. Il est possible d'aller en chercher dans d'autres colonnes (alternative_identifiers) mais besoin de regex etc, pour l'instant faisons simple.
--   Mapper les IDs uniprots à uniref via le package `UniProt.ws`. Pour savoir si bactérie ou champignon, voir colonne `protein_taxid_2_cat`.
 
 [...] FIN OLD
 
